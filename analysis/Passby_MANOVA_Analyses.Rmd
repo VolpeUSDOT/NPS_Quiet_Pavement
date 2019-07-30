@@ -1,0 +1,119 @@
+---
+title: "Passby Noise Across Frequencies"
+output: 
+  html_document:
+    self_contained: true
+    toc: true
+    toc_depth: 3
+    toc_float:
+      collapsed: true
+      smooth_scroll: false
+---
+
+<!-- saved from url=(0014)about:internet -->
+<!-- This needs to be manually added to the second line of the html -->
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = F, warning=F, message=F)
+library(tidyverse)
+codeloc = ifelse(file.exists('~/git/NPS_Quiet_Pavement'),
+                 "~/git/NPS_Quiet_Pavement", "~/GitHub/NPS_Quiet_Pavement")
+
+rootdir <- 'C:/Quiet_Pavement_Local'
+knitr::opts_knit$set(root.dir = rootdir)
+
+# Read in data prepared by Initial EDA Exploratory.ipynb, and drop the first column of rownames.
+predictors <- read.csv(file.path(rootdir, 'MANOVA_Predictors.csv')); predictors <- predictors[-grep('^X$', names(predictors))]
+
+# Format year
+predictors$Year <- factor(predictors$Year, labels = c('2016', '2018', '2019')) # From 0, 1, 2
+
+LZFeq <- read.csv(file.path(rootdir, 'MANOVA_LZFeq.csv')); LZFeq <- LZFeq[-grep('^X$', names(LZFeq))] 
+LZFMax <- read.csv(file.path(rootdir, 'MANOVA_LZFMax.csv')); LZFMax <- LZFMax[-grep('^X$', names(LZFMax))]
+
+# Bind predictors together with response values for easier manipulation
+LZFeq <- data.frame(predictors, LZFeq)
+LZFMax <- data.frame(predictors, LZFMax)
+
+# Convert to long format. Organize by treatment, with four levels for the treatments in 2018. 
+LZFeq_l <- LZFeq %>% 
+  gather(key = treatment, value, X3.8in.Chip.Seal:Type.III.Microsurfacing) %>%
+  mutate(macro_treatment = ifelse(Microsurfacing == 1, 'Microsurfacing', 'Chip.Seal')) %>%
+  select(-Chip.Seal, -Microsurfacing, -value)
+
+
+
+LZFMax_l <- LZFMax %>% 
+  gather(key = treatment, value, X3.8in.Chip.Seal:Type.III.Microsurfacing) %>%
+  mutate(macro_treatment = ifelse(Microsurfacing == 1, 'Microsurfacing', 'Chip.Seal')) %>%
+  select(-Chip.Seal, -Microsurfacing, -value)
+
+```
+
+# Overview
+
+Goal is to assess the noise measurements from passby measurements in 2018, where four quiet pavement treatments were applied to test areas: 1/4 in chip seal, 3/8 in chip seal, Type II microsurfacing, and Type III microsurfacing. 
+
+There are eight sites, and four pavement treatments; each pavement treatment is replicated at two sites. Sound intensity was measured pre-treatment aand post-treatment.
+
+In the original assessment, overall the Type II microsurfacing was found to reduce overall sound intensity sound from OBSI measuremnts from 99.2 dB on average to 97.6. Other treatments did not on average reduce sound levels.
+
+This analysis focuses on the observational passby data, where vehicle type varies, and assessess the effects of speed and pavement temperature in addition to experimental treatments.
+
+# MANOVAs 
+
+```{r summary_vals}
+Feq_summary <- LZFeq_l %>%
+  group_by(Year, treatment) %>%  
+  summarize(N_total = n(),
+            N_autos = sum(vehtype == 1),
+            Mean_speed = mean(speed),
+            SD_speed = sd(speed),
+            Mean_pavetemp = mean(pavetemp),
+            SD_pavetemp = sd(pavetemp))
+
+FMax_summary <- LZFMax_l %>%
+  group_by(Year, treatment) %>%  
+  summarize(N_total = n(),
+            N_autos = sum(vehtype == 1),
+            Mean_speed = mean(speed),
+            SD_speed = sd(speed),
+            Mean_pavetemp = mean(pavetemp),
+            SD_pavetemp = sd(pavetemp))
+
+kable(Feq_summary,
+      caption = "Summary of passby data collected by year and treatment.",
+      digits = 2) %>% 
+  kable_styling(bootstrap_options = c("striped", "hover")) 
+
+```
+
+```{r manova_1}
+autos_only_predictors = filter(LZFeq_l, vehtype == 1)
+
+
+LZFeqResponse = merge(predictors,LZFeq) %>% filter(vehtype == 1 & year == 1)
+
+Feq.man.macro <- manova(cbind(X63.0,X80.0,X100.0,X125.0,X160.0,X200.0,X250.0,X315.0,X400.0,X500.0,
+                        X630.0,X800.0,X1000.0,X1250.0,X1600.0,X2000.0,X2500.0,X3150.0,X4000.0,X5000.0,
+                        X6300.0,X8000.0,X10000.0,X12500.0,X16000.0,X20000.0)~
+                    Chip.Seal+Microsurfacing+pavetemp+speed, data = LZFeqResponse)
+summary.aov(Feq.man.chip)
+
+Feq.man.micro <- manova(cbind(X63.0,X80.0,X100.0,X125.0,X160.0,X200.0,X250.0,X315.0,X400.0,X500.0,
+                        X630.0,X800.0,X1000.0,X1250.0,X1600.0,X2000.0,X2500.0,X3150.0,X4000.0,X5000.0,
+                        X6300.0,X8000.0,X10000.0,X12500.0,X16000.0,X20000.0)~
+                     X3.8in.Chip.Seal+X1.4in.Chip.Seal+ Type.II.Microsurfacing + Type.III.Microsurfacing +pavetemp+speed, data = LZFeqResponse)
+summary(Feq.man.micro)
+#coef(Feq.man.micro)
+```
+
+```{r manova_post_hoc}
+for (freq in names(LZFeqResponse[22:47])){
+  print("---------------------------------------------------------------------------------------------------")
+  print(freq)
+  an.results = anova(lm(LZFeqResponse[[freq]]~pavetemp+speed+X3.8in.Chip.Seal+X1.4in.Chip.Seal+
+             Type.II.Microsurfacing+Type.III.Microsurfacing+Chip.Seal+Microsurfacing, data = LZFeqResponse))
+  print(an.results)
+}
+```
