@@ -76,8 +76,16 @@ for(l in levs){
   ll = LZFMax[LZFMax[l] == 1, cols]
   ll$treatment = l
   LZFMax_l = rbind(LZFMax_l, ll)
-  
 }
+
+# Change treatment level for 2016 to baseline_chipseal
+LZFeq_l <- LZFeq_l %>%
+  mutate(treatment = ifelse(Year == '2016', 'baseline_chipseal', treatment))
+
+LZFMax_l <- LZFMax_l %>%
+  mutate(treatment = ifelse(Year == '2016', 'baseline_chipseal', treatment))
+
+
 ```
 
 # Overview
@@ -156,15 +164,23 @@ kable(macro.coeff,
   kable_styling(bootstrap_options = c("striped", "hover")) 
 ```
 
+# Post-hoc ANOVAs by frequency
+
+## Here is a second level header
+
+### Third
+
 ```{r manova_post_hoc with LZFeq1}
-LZFeq_l=filter(LZFeq_l, Year != "2019")
+LZFeq_l = filter(LZFeq_l, Year != "2019")
 
 LZFeq.aov.results = vector()
 LZFeq.aov.stderr = vector()
 frequencies = vector()
 
 for (freq in names(LZFeq_l[16:41])){
-  an.results = lm(LZFeq_l[[freq]] ~ -1 + macro_treatment + pavetemp * speed + Site + Year, data = LZFeq_l)
+  # freq = names(LZFeq_l[16])
+  an.results = lm(LZFeq_l[[freq]] ~ treatment + pavetemp * speed, data = LZFeq_l)
+  
   frequencies = rbind(frequencies, c(as.numeric(substr(freq, 2, nchar(freq)))))
   LZFeq.aov.results = rbind(LZFeq.aov.results, coef(an.results))
   LZFeq.aov.stderr = rbind(LZFeq.aov.stderr, coef(summary(an.results))[,"Std. Error"])
@@ -178,18 +194,24 @@ LZFeq.aov.stderr = cbind(LZFeq.aov.stderr, frequency = frequencies)
 
 
 ```{r plotting LZFeq_1 Results}
-library(ggplot2)
-library(grid)
-require(gridExtra)
+# Using treatment instead of macro treatment
+# Only 1/4 in chip seal
+# Do this for both Feq and Fmax
+# Extra credit: color by overlap with zero (maybe new column in .results to indicate sig + or sig - values)
+# For macrotreatment, could make plot as before with the db instead of change in db -- put these after the main results by four treatment levels
 
-LZFeq_Chip.Seal = ggplot()+
-  geom_pointrange(data = LZFeq.aov.results, aes(x=frequency, y = macro_treatmentChip.Seal,
-                                                 ymin =macro_treatmentChip.Seal + LZFeq.aov.stderr$macro_treatmentChip.Seal*-2,
-                                                 ymax =macro_treatmentChip.Seal +LZFeq.aov.stderr$macro_treatmentChip.Seal*2))+
+LZFeq_Chip.Seal.1.4 = ggplot()+
+  geom_pointrange(data = LZFeq.aov.results, aes(x = frequency, 
+                                                y = treatmentX1.4in.Chip.Seal,
+                                                ymin = treatmentX1.4in.Chip.Seal - LZFeq.aov.stderr$treatmentX1.4in.Chip.Seal,
+                                                 ymax =treatmentX1.4in.Chip.Seal + LZFeq.aov.stderr$treatmentX1.4in.Chip.Seal)) +
   theme_bw(base_line_size = 1)+
   scale_x_log10()+
-  labs(title = "LZFeq ANOVA Chip Seal Coefficients", x = "Frequency (Hz)", y = "Sound Intensity (dB)")+
-  ylim(0,75)
+  labs(title = "LZFeq ANOVA 1/4 in Chip Seal Coefficients", 
+       x = "Frequency (Hz)", 
+       y = "Coefficent of Change in Sound Intensity from Pre-Treatment (dB)")  + 
+  geom_hline(yintercept = 0)
+#  ylim(0,75)
 
 LZFeq_Microsurfacing = ggplot()+
   geom_pointrange(data = LZFeq.aov.results, aes(x=frequency, y = macro_treatmentMicrosurfacing,
