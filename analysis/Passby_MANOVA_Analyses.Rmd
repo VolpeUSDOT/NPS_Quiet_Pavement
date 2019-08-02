@@ -15,7 +15,15 @@ output:
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = F, warning=F, message=F)
+
 library(tidyverse)
+library(ggplot2)
+library(grid)
+require(gridExtra)
+library(knitr)
+library(kableExtra)
+
+
 codeloc = ifelse(file.exists('~/git/NPS_Quiet_Pavement'),
                  "~/git/NPS_Quiet_Pavement", "~/GitHub/NPS_Quiet_Pavement")
 
@@ -35,18 +43,41 @@ LZFMax <- read.csv(file.path(rootdir, 'MANOVA_LZFMax.csv')); LZFMax <- LZFMax[-g
 LZFeq <- data.frame(predictors, LZFeq)
 LZFMax <- data.frame(predictors, LZFMax)
 
+LZFeq <- LZFeq %>% mutate(macro_treatment = ifelse(Microsurfacing == 1, 'Microsurfacing', 'Chip.Seal')) 
+LZFMax <- LZFMax %>% mutate(macro_treatment = ifelse(Microsurfacing == 1, 'Microsurfacing', 'Chip.Seal')) 
+
 # Convert to long format. Organize by treatment, with four levels for the treatments in 2018. 
-LZFeq_l <- LZFeq %>% 
-  gather(key = treatment, value, X3.8in.Chip.Seal:Type.III.Microsurfacing) %>%
-  mutate(macro_treatment = ifelse(Microsurfacing == 1, 'Microsurfacing', 'Chip.Seal')) %>%
-  select(-Chip.Seal, -Microsurfacing, -value)
+# LZFeq_l <- LZFeq %>% 
+#   gather(key = yr_treatment, value, X3.8in.Chip.Seal:Type.III.Microsurfacing) %>%
+#   mutate(macro_treatment = ifelse(Microsurfacing == 1, 'Microsurfacing', 'Chip.Seal')) %>%
+#   select(-Chip.Seal, -Microsurfacing, -value)
 
+# Manual loop. gather is not working as expected (grouping across years)
+levs = c('X3.8in.Chip.Seal', 'X1.4in.Chip.Seal', 'Type.II.Microsurfacing', 'Type.III.Microsurfacing')
+cols = names(LZFeq)[c(1:6, 11:48)]
 
-LZFMax_l <- LZFMax %>% 
-  gather(key = treatment, value, X3.8in.Chip.Seal:Type.III.Microsurfacing) %>%
-  mutate(macro_treatment = ifelse(Microsurfacing == 1, 'Microsurfacing', 'Chip.Seal')) %>%
-  select(-Chip.Seal, -Microsurfacing, -value)
+LZFeq_l <- vector()
+for(l in levs){
+  ll = LZFeq[LZFeq[l] == 1, cols]
+  ll$treatment = l
+  LZFeq_l = rbind(LZFeq_l, ll)
+  
+}
 
+# LZFMax_l <- LZFMax %>% 
+#   gather(key = treatment, value, X3.8in.Chip.Seal:Type.III.Microsurfacing) %>%
+#   mutate(macro_treatment = ifelse(Microsurfacing == 1, 'Microsurfacing', 'Chip.Seal')) %>%
+#   select(-Chip.Seal, -Microsurfacing, -value)
+
+cols = names(LZFMax)[c(1:6, 11:48)]
+
+LZFMax_l <- vector()
+for(l in levs){
+  ll = LZFMax[LZFMax[l] == 1, cols]
+  ll$treatment = l
+  LZFMax_l = rbind(LZFMax_l, ll)
+  
+}
 ```
 
 # Overview
@@ -62,10 +93,8 @@ This analysis focuses on the observational passby data, where vehicle type varie
 # MANOVAs 
 
 ```{r summary_vals}
-library(knitr)
-library(kableExtra)
 Feq_summary <- LZFeq_l %>%
-  group_by(Year,treatment) %>%  
+  group_by(Year, treatment) %>%  
   summarize(N_total = n(),
             N_autos = sum(vehtype == 1),
             Mean_speed = mean(speed),
@@ -74,7 +103,7 @@ Feq_summary <- LZFeq_l %>%
             SD_pavetemp = sd(pavetemp))
 
 FMax_summary <- LZFMax_l %>%
-  group_by(Year,treatment) %>%  
+  group_by(Year, treatment) %>%  
   summarize(N_total = n(),
             N_autos = sum(vehtype == 1),
             Mean_speed = mean(speed),
@@ -96,19 +125,31 @@ LZFeq_l = filter(LZFeq_l, Year !="2019")
 Feq.man.macro <- manova(cbind(X63.0,X80.0,X100.0,X125.0,X160.0,X200.0,X250.0,X315.0,X400.0,X500.0,
                         X630.0,X800.0,X1000.0,X1250.0,X1600.0,X2000.0,X2500.0,X3150.0,X4000.0,
                         X5000.0,X6300.0,X8000.0,X10000.0,X12500.0,X16000.0,X20000.0)~
-                    macro_treatment+pavetemp+speed+Site+Year, data = LZFeq_l)
+                    macro_treatment + pavetemp * speed + Site + Year, data = LZFeq_l)
 
 
 Feq.man.micro <- manova(cbind(X63.0,X80.0,X100.0,X125.0,X160.0,X200.0,X250.0,X315.0,X400.0,X500.0,
                         X630.0,X800.0,X1000.0,X1250.0,X1600.0,X2000.0,X2500.0,X3150.0,X4000.0,
                         X5000.0,X6300.0,X8000.0,X10000.0,X12500.0,X16000.0,X20000.0)~
-                      treatment+pavetemp+speed+Site+Year, data = LZFeq_l)
+                      treatment + pavetemp * speed + Site + Year, data = LZFeq_l)
 
 
-macro.coeff = coefficients()
+macro.coeff = coefficients(Feq.man.macro)
+micro.coeff = coefficients(Feq.man.micro)
+```
+
+Using MANOVA, we see that there are strong effects of all the predictors on noise values across the frequencies. The first table is for overall effects of chip seal vs. microsurfacing, and the second table is for each of the four treatment levels.
+
+```{r overall summary}
 summary(Feq.man.macro)
-residuals(Feq.man.macro)
-str(Feq.man.macro)
+
+
+summary(Feq.man.micro)
+```
+
+```{r coef_table_macro}
+# residuals(Feq.man.macro)
+# str(Feq.man.macro)
 kable(macro.coeff,
       caption = "Coefficients of Macro Pavement Type Manova",
       digits = 3) %>% 
@@ -165,14 +206,8 @@ grid.arrange(LZFeq_Chip.Seal, LZFeq_Microsurfacing, nrow = 2)
 
 
 
-
-
-
-
-
-
 ```{r manova with LZFMax_l}
-LZFMax_l = filter(LZFMax_l, year !="2019")
+LZFMax_l = filter(LZFMax_l, Year !="2019")
 
 Feq.man.macro <- manova(cbind(X63.0,X80.0,X100.0,X125.0,X160.0,X200.0,X250.0,X315.0,X400.0,X500.0,
                         X630.0,X800.0,X1000.0,X1250.0,X1600.0,X2000.0,X2500.0,X3150.0,X4000.0,
@@ -188,18 +223,20 @@ summary(Feq.man.micro)
 
 ```
 ```{r manova_post_hoc with LZFMax_l}
-LZFMax_l=filter(LZFMax_l, Year != "2019")
+LZFMax_l = filter(LZFMax_l, Year != "2019")
 
 LZFMax.aov.results = vector()
 LZFMax.aov.stderr = vector()
 frequencies = vector()
 
-for (freq in names(LZFeq_l[16:41])){
-  an.results = lm(LZFeq_l[[freq]] ~ -1 + macro_treatment + pavetemp * speed + Site + Year, data = LZFMax_l)
+for (freq in names(LZFMax_l[16:41])){
+  
+  an.results = lm(LZFMax_l[[freq]] ~ -1 + macro_treatment + pavetemp * speed + Site + Year, data = LZFMax_l)
   frequencies = rbind(frequencies, c(as.numeric(substr(freq, 2, nchar(freq)))))
   LZFMax.aov.results = rbind(LZFMax.aov.results, coef(an.results))
   LZFMax.aov.stderr = rbind(LZFMax.aov.stderr, coef(summary(an.results))[,"Std. Error"])
 }
+
 LZFMax.aov.results = data.frame(LZFMax.aov.results)
 LZFMax.aov.results = cbind(LZFMax.aov.results, frequency = frequencies)
 
@@ -210,9 +247,6 @@ LZFMax.aov.stderr = cbind(LZFMax.aov.stderr, frequency = frequencies)
 
 
 ```{r plotting with LZFMax Results}
-library(ggplot2)
-library(grid)
-require(gridExtra)
 
 LZFMax_Chip.Seal = ggplot()+
   geom_pointrange(data = LZFMax.aov.results, aes(x=frequency, y = macro_treatmentChip.Seal,
