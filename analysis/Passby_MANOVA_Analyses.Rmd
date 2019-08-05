@@ -127,6 +127,7 @@ kable(Feq_summary,
 
 ```
 # MANOVA Analysis with LZFeq
+
 ```{r manova_1 with LZFeq}
 
 LZFeq_l = filter(LZFeq_l, Year !="2019")
@@ -180,7 +181,9 @@ LZFeq.aov.results = cbind(LZFeq.aov.results, frequency = frequencies)
 LZFeq.aov.stderr = data.frame(LZFeq.aov.stderr)
 LZFeq.aov.stderr = cbind(LZFeq.aov.stderr, frequency = frequencies)
 ``` 
-##Plotting ANOVA coefficient of change in sound intensity from pre-treatment for LZFeq
+
+## Plotting ANOVA coefficient of change in sound intensity from pre-treatment for LZFeq
+
 Response variables: treatment, pavement temperature, and speed
 
 ```{r fig.height = 20, fig.width = 15}
@@ -339,7 +342,9 @@ LZFeq_Microsurfacing = ggplot()+
 
 grid.arrange(LZFeq_Chip.Seal, LZFeq_Microsurfacing, nrow = 2)
 ```
-#MANOVA Analysis with LZFMax
+
+# MANOVA Analysis with LZFMax
+
 ```{r manova with LZFMax_l}
 LZFMax_l = filter(LZFMax_l, Year !="2019")
 
@@ -378,7 +383,9 @@ LZFMax.aov.stderr = cbind(LZFMax.aov.stderr, frequency = frequencies)
 ```
 
 
-##Plotting ANOVA coefficients of change in sound intensity from pretreatment for LZFMax
+
+## Plotting ANOVA coefficients of change in sound intensity from pretreatment for LZFMax
+
 Predictors: Treatment type, pavement temperature, and speed
 ```{r fig.height = 20, fig.width = 15}
 
@@ -497,8 +504,11 @@ LZFMax.aov.macro.stderr = data.frame(LZFMax.aov.macro.stderr)
 LZFMax.aov.macro.stderr = cbind(LZFMax.aov.macro.stderr, frequency = frequencies)
 
 ```
-##Plotting ANOVA coefficients of sound intensity for LZFMax
+
+## Plotting ANOVA coefficients of sound intensity for LZFMax
+
 Predictors: Macro Treatment type, pavement temperature, speed, and year
+
 ```{r fig.height = 10, fig.width = 15}
 #Plot Macro Treatment Type Results LZFMax
 LZFMax_Chip.Seal = ggplot()+
