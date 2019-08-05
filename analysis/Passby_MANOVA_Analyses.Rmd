@@ -184,13 +184,6 @@ LZFeq.aov.stderr = cbind(LZFeq.aov.stderr, frequency = frequencies)
 Response variables: treatment, pavement temperature, and speed
 
 ```{r fig.height = 20, fig.width = 15}
- #plotting LZFeq_1 Results
-# Using treatment instead of macro treatment
-# Only 1/4 in chip seal
-# Do this for both Feq and Fmax
-# Extra credit: color by overlap with zero (maybe new column in .results to indicate sig + or sig - values)
-# For macrotreatment, could make plot as before with the db instead of change in db -- put these after the main results by four treatment levels
-
 #Set colors for each point for 1/4 in chip seal
 CS_1.4_col = c()
 CS_1.4_col = ifelse(abs(LZFeq.aov.results$treatmentX1.4in.Chip.Seal)>LZFeq.aov.stderr$treatmentX1.4in.Chip.Seal,
