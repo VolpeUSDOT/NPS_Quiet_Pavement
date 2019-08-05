@@ -22,6 +22,7 @@ library(grid)
 require(gridExtra)
 library(knitr)
 library(kableExtra)
+library(gtable)
 
 
 codeloc = ifelse(file.exists('~/git/NPS_Quiet_Pavement'),
@@ -98,7 +99,7 @@ In the original assessment, overall the Type II microsurfacing was found to redu
 
 This analysis focuses on the observational passby data, where vehicle type varies, and assessess the effects of speed and pavement temperature in addition to experimental treatments.
 
-# MANOVAs 
+
 
 ```{r summary_vals}
 Feq_summary <- LZFeq_l %>%
@@ -125,7 +126,7 @@ kable(Feq_summary,
   kable_styling(bootstrap_options = c("striped", "hover")) 
 
 ```
-
+# MANOVA Analysis with LZFeq
 ```{r manova_1 with LZFeq}
 
 LZFeq_l = filter(LZFeq_l, Year !="2019")
@@ -133,13 +134,13 @@ LZFeq_l = filter(LZFeq_l, Year !="2019")
 Feq.man.macro <- manova(cbind(X63.0,X80.0,X100.0,X125.0,X160.0,X200.0,X250.0,X315.0,X400.0,X500.0,
                         X630.0,X800.0,X1000.0,X1250.0,X1600.0,X2000.0,X2500.0,X3150.0,X4000.0,
                         X5000.0,X6300.0,X8000.0,X10000.0,X12500.0,X16000.0,X20000.0)~
-                    macro_treatment + pavetemp * speed + Site + Year, data = LZFeq_l)
+                    macro_treatment + pavetemp * speed + Year, data = LZFeq_l)
 
 
 Feq.man.micro <- manova(cbind(X63.0,X80.0,X100.0,X125.0,X160.0,X200.0,X250.0,X315.0,X400.0,X500.0,
                         X630.0,X800.0,X1000.0,X1250.0,X1600.0,X2000.0,X2500.0,X3150.0,X4000.0,
                         X5000.0,X6300.0,X8000.0,X10000.0,X12500.0,X16000.0,X20000.0)~
-                      treatment + pavetemp * speed + Site + Year, data = LZFeq_l)
+                      treatment + pavetemp * speed, data = LZFeq_l)
 
 
 macro.coeff = coefficients(Feq.man.macro)
@@ -155,20 +156,8 @@ summary(Feq.man.macro)
 summary(Feq.man.micro)
 ```
 
-```{r coef_table_macro}
-# residuals(Feq.man.macro)
-# str(Feq.man.macro)
-kable(macro.coeff,
-      caption = "Coefficients of Macro Pavement Type Manova",
-      digits = 3) %>% 
-  kable_styling(bootstrap_options = c("striped", "hover")) 
-```
 
-# Post-hoc ANOVAs by frequency
-
-## Here is a second level header
-
-### Third
+## Post-hoc ANOVAs by LZFeq Frequency
 
 ```{r manova_post_hoc with LZFeq1}
 LZFeq_l = filter(LZFeq_l, Year != "2019")
@@ -191,56 +180,170 @@ LZFeq.aov.results = cbind(LZFeq.aov.results, frequency = frequencies)
 LZFeq.aov.stderr = data.frame(LZFeq.aov.stderr)
 LZFeq.aov.stderr = cbind(LZFeq.aov.stderr, frequency = frequencies)
 ``` 
+##Plotting ANOVA coefficient of change in sound intensity from pre-treatment for LZFeq
+Response variables: treatment, pavement temperature, and speed
 
-
-```{r plotting LZFeq_1 Results}
+```{r fig.height = 20, fig.width = 15}
+ #plotting LZFeq_1 Results
 # Using treatment instead of macro treatment
 # Only 1/4 in chip seal
 # Do this for both Feq and Fmax
 # Extra credit: color by overlap with zero (maybe new column in .results to indicate sig + or sig - values)
 # For macrotreatment, could make plot as before with the db instead of change in db -- put these after the main results by four treatment levels
 
+#Set colors for each point for 1/4 in chip seal
+CS_1.4_col = c()
+CS_1.4_col = ifelse(abs(LZFeq.aov.results$treatmentX1.4in.Chip.Seal)>LZFeq.aov.stderr$treatmentX1.4in.Chip.Seal,
+       ifelse(LZFeq.aov.results$treatmentX1.4in.Chip.Seal<0, "blue", "red"),"gray")
+
+#Plot LZFeq 1/4in Chip Seal
 LZFeq_Chip.Seal.1.4 = ggplot()+
   geom_pointrange(data = LZFeq.aov.results, aes(x = frequency, 
                                                 y = treatmentX1.4in.Chip.Seal,
                                                 ymin = treatmentX1.4in.Chip.Seal - LZFeq.aov.stderr$treatmentX1.4in.Chip.Seal,
-                                                 ymax =treatmentX1.4in.Chip.Seal + LZFeq.aov.stderr$treatmentX1.4in.Chip.Seal)) +
+                                                 ymax =treatmentX1.4in.Chip.Seal + LZFeq.aov.stderr$treatmentX1.4in.Chip.Seal),
+                  colour = CS_1.4_col) +
   theme_bw(base_line_size = 1)+
   scale_x_log10()+
-  labs(title = "LZFeq ANOVA 1/4 in Chip Seal Coefficients", 
+  labs(title = "LZFeq ANOVA 1/4in Chip Seal Coefficients", 
        x = "Frequency (Hz)", 
        y = "Coefficent of Change in Sound Intensity from Pre-Treatment (dB)")  + 
-  geom_hline(yintercept = 0)
-#  ylim(0,75)
+  geom_hline(yintercept = 0)+
+  ylim(-12,12)
 
-LZFeq_Microsurfacing = ggplot()+
-  geom_pointrange(data = LZFeq.aov.results, aes(x=frequency, y = macro_treatmentMicrosurfacing,
-                                                 ymin =macro_treatmentMicrosurfacing + LZFeq.aov.stderr$macro_treatmentMicrosurfacing*-2,
-                                                 ymax =macro_treatmentMicrosurfacing +LZFeq.aov.stderr$macro_treatmentMicrosurfacing*2))+
+#Set colors for each point in 3/8 in chip seal
+CS_3.8_col = c()
+CS_3.8_col = ifelse(abs(LZFeq.aov.results$treatmentX3.8in.Chip.Seal)>LZFeq.aov.stderr$treatmentX3.8in.Chip.Seal,
+       ifelse(LZFeq.aov.results$treatmentX3.8in.Chip.Seal<0, "blue", "red"),"gray")
+
+#Plot LZFeq 3/8 in chip seal
+LZFeq_Chip.Seal.3.8 = ggplot()+
+  geom_pointrange(data = LZFeq.aov.results, aes(x = frequency, 
+                                                y = treatmentX3.8in.Chip.Seal,
+                                                ymin = treatmentX3.8in.Chip.Seal - LZFeq.aov.stderr$treatmentX3.8in.Chip.Seal,
+                                                 ymax =treatmentX3.8in.Chip.Seal + LZFeq.aov.stderr$treatmentX3.8in.Chip.Seal),
+                  colour = CS_3.8_col) +
   theme_bw(base_line_size = 1)+
   scale_x_log10()+
-  labs(title = "LZFeq ANOVA Microsurfacing Coefficients", x = "Frequency (Hz)", y = "Sound Intensity (dB)")+
-  ylim(0,75)
+  labs(title = "LZFeq ANOVA 3/8in Chip Seal Coefficients", 
+       x = "Frequency (Hz)", 
+       y = "Coefficent of Change in Sound Intensity from Pre-Treatment (dB)")  + 
+  geom_hline(yintercept = 0)+
+  ylim(-12,12)
 
-grid.arrange(LZFeq_Chip.Seal, LZFeq_Microsurfacing, nrow = 2)
+#Set colors for each point in type II microsurfacing
+TII_Micro_col = c()
+TII_Micro_col = ifelse(abs(LZFeq.aov.results$treatmentType.II.Microsurfacing)>LZFeq.aov.stderr$treatmentType.II.Microsurfacing,
+       ifelse(LZFeq.aov.results$treatmentType.II.Microsurfacing<0, "blue", "red"),"gray")
+
+#Plot LZFeq type II microsurfacing
+LZFeq_Microsurfacing.II = ggplot()+
+  geom_pointrange(data = LZFeq.aov.results, aes(x = frequency, 
+                                                y = treatmentType.II.Microsurfacing,
+                                                ymin=treatmentType.II.Microsurfacing - LZFeq.aov.stderr$treatmentType.II.Microsurfacing,
+                                                 ymax=treatmentType.II.Microsurfacing + LZFeq.aov.stderr$treatmentType.II.Microsurfacing),
+                  colour = TII_Micro_col) +
+  theme_bw(base_line_size = 1)+
+  scale_x_log10()+
+  labs(title = "LZFeq ANOVA Type II Microsurfacing Coefficients", 
+       x = "Frequency (Hz)", 
+       y = "Coefficent of Change in Sound Intensity from Pre-Treatment (dB)")  + 
+  geom_hline(yintercept = 0)+
+  ylim(-12,12)
+
+#Set colors for each point in type III microsurfacing
+TIII_Micro_col = c()
+TIII_Micro_col = ifelse(abs(LZFeq.aov.results$treatmentType.III.Microsurfacing)>LZFeq.aov.stderr$treatmentType.III.Microsurfacing,
+       ifelse(LZFeq.aov.results$treatmentType.III.Microsurfacing<0, "blue", "red"),"gray")
+
+#Plot LZFeq Type III microsurfacing
+LZFeq_Microsurfacing.III = ggplot()+
+  geom_pointrange(data = LZFeq.aov.results, aes(x = frequency, 
+                                                y = treatmentType.III.Microsurfacing,
+                                                ymin=treatmentType.III.Microsurfacing - LZFeq.aov.stderr$treatmentType.III.Microsurfacing,
+                                                 ymax=treatmentType.III.Microsurfacing + LZFeq.aov.stderr$treatmentType.III.Microsurfacing),
+                  colour = TIII_Micro_col) +
+  theme_bw(base_line_size = 1)+
+  scale_x_log10()+
+  labs(title = "LZFeq ANOVA Type II Microsurfacing Coefficients", 
+       x = "Frequency (Hz)", 
+       y = "Coefficent of Change in Sound Intensity from Pre-Treatment (dB)")  + 
+  geom_hline(yintercept = 0)+
+  ylim(-12,12)
+
+#Arrange plots in grid
+grid.arrange(LZFeq_Chip.Seal.1.4,LZFeq_Chip.Seal.3.8,LZFeq_Microsurfacing.II, LZFeq_Microsurfacing.III, nrow = 4)
 
 ```
+```{r}
 
+#ANOVA Model on Macro Treatment Types LZFeq
+LZFeq_l = filter(LZFeq_l, Year != "2019")
 
+LZFeq.aov.macro.results = vector()
+LZFeq.aov.macro.stderr = vector()
+frequencies = vector()
 
+for (freq in names(LZFMax_l[16:41])){
+  an.results = lm(LZFeq_l[[freq]] ~ -1+macro_treatment + pavetemp * speed+Year, data = LZFeq_l)
+  frequencies = rbind(frequencies, c(as.numeric(substr(freq, 2, nchar(freq)))))
+  LZFeq.aov.macro.results = rbind(LZFeq.aov.macro.results, coef(an.results))
+  LZFeq.aov.macro.stderr = rbind(LZFeq.aov.macro.stderr, coef(summary(an.results))[,"Std. Error"])
+}
+
+LZFeq.aov.macro.results = data.frame(LZFeq.aov.macro.results)
+LZFeq.aov.macro.results = cbind(LZFeq.aov.macro.results, frequency = frequencies)
+
+LZFeq.aov.macro.stderr = data.frame(LZFeq.aov.macro.stderr)
+LZFeq.aov.macro.stderr = cbind(LZFeq.aov.macro.stderr, frequency = frequencies)
+
+```
+##Plotting ANOVA coefficients of sound intensity for LZFeq
+Predictors: Macro Treatment type, pavement temperature, speed, and year
+```{r fig.width = 15}
+#Plot Macro Treatment Type Results LZFeq
+LZFeq_Chip.Seal = ggplot()+
+  geom_pointrange(data = LZFeq.aov.macro.results, aes(x=frequency, y = macro_treatmentChip.Seal,
+                                                 ymin =macro_treatmentChip.Seal - 
+                                                   LZFeq.aov.macro.stderr$macro_treatmentChip.Seal,
+                                                 ymax =macro_treatmentChip.Seal +
+                                                   LZFeq.aov.macro.stderr$macro_treatmentChip.Seal))+
+  theme_bw(base_line_size = 1)+
+  scale_x_log10()+
+  labs(title = "LZFeq ANOVA Chip Seal Coefficients",
+       x = "Frequency (Hz)",
+       y = "Coefficient of Sound Intensity (dB)")+
+  ylim(-27,75)
+
+LZFeq_Microsurfacing = ggplot()+
+  geom_pointrange(data = LZFeq.aov.macro.results, aes(x=frequency, y = macro_treatmentMicrosurfacing,
+                                                 ymin =macro_treatmentMicrosurfacing - 
+                                                   LZFeq.aov.macro.stderr$macro_treatmentMicrosurfacing,
+                                                 ymax =macro_treatmentMicrosurfacing +
+                                                   LZFeq.aov.macro.stderr$macro_treatmentMicrosurfacing))+
+  theme_bw(base_line_size = 1)+
+  scale_x_log10()+
+  labs(title = "LZFeq ANOVA Microsurfacing Coefficients",
+       x = "Frequency (Hz)",
+       y = "Coefficient of Sound Intensity (dB)")+
+  ylim(-27,75)
+
+grid.arrange(LZFeq_Chip.Seal, LZFeq_Microsurfacing, nrow = 2)
+```
+#MANOVA Analysis with LZFMax
 ```{r manova with LZFMax_l}
 LZFMax_l = filter(LZFMax_l, Year !="2019")
 
 Feq.man.macro <- manova(cbind(X63.0,X80.0,X100.0,X125.0,X160.0,X200.0,X250.0,X315.0,X400.0,X500.0,
                         X630.0,X800.0,X1000.0,X1250.0,X1600.0,X2000.0,X2500.0,X3150.0,X4000.0,
                         X5000.0,X6300.0,X8000.0,X10000.0,X12500.0,X16000.0,X20000.0)~
-                    macro_treatment+pavetemp+speed+Site+Year, data = LZFMax_l)
+                    macro_treatment+pavetemp*speed+Year, data = LZFMax_l)
 summary(Feq.man.macro)
 
 Feq.man.micro <- manova(cbind(X63.0,X80.0,X100.0,X125.0,X160.0,X200.0,X250.0,X315.0,X400.0,X500.0,
                         X630.0,X800.0,X1000.0,X1250.0,X1600.0,X2000.0,X2500.0,X3150.0,X4000.0,
                         X5000.0,X6300.0,X8000.0,X10000.0,X12500.0,X16000.0,X20000.0)~
-                      treatment+pavetemp+speed+Site+Year, data = LZFMax_l)
+                      treatment + pavetemp * speed, data = LZFMax_l)
 summary(Feq.man.micro)
 
 ```
@@ -252,8 +355,7 @@ LZFMax.aov.stderr = vector()
 frequencies = vector()
 
 for (freq in names(LZFMax_l[16:41])){
-  
-  an.results = lm(LZFMax_l[[freq]] ~ -1 + macro_treatment + pavetemp * speed + Site + Year, data = LZFMax_l)
+  an.results = lm(LZFMax_l[[freq]] ~ treatment + pavetemp * speed, data = LZFMax_l)
   frequencies = rbind(frequencies, c(as.numeric(substr(freq, 2, nchar(freq)))))
   LZFMax.aov.results = rbind(LZFMax.aov.results, coef(an.results))
   LZFMax.aov.stderr = rbind(LZFMax.aov.stderr, coef(summary(an.results))[,"Std. Error"])
@@ -267,34 +369,146 @@ LZFMax.aov.stderr = cbind(LZFMax.aov.stderr, frequency = frequencies)
 ```
 
 
+##Plotting ANOVA coefficients of change in sound intensity from pretreatment for LZFMax
+Predictors: Treatment type, pavement temperature, and speed
+```{r fig.height = 20, fig.width = 15}
 
-```{r plotting with LZFMax Results}
+CS_1.4_col = c()
+CS_1.4_col = ifelse(abs(LZFMax.aov.results$treatmentX1.4in.Chip.Seal)>
+                          LZFMax.aov.stderr$treatmentX1.4in.Chip.Seal,
+       ifelse(LZFMax.aov.results$treatmentX1.4in.Chip.Seal<0, "blue", "red"),"gray")
 
-LZFMax_Chip.Seal = ggplot()+
-  geom_pointrange(data = LZFMax.aov.results, aes(x=frequency, y = macro_treatmentChip.Seal,
-                                                 ymin =macro_treatmentChip.Seal + LZFMax.aov.stderr$macro_treatmentChip.Seal*-2,
-                                                 ymax =macro_treatmentChip.Seal +LZFMax.aov.stderr$macro_treatmentChip.Seal*2))+
+LZFMax_Chip.Seal.1.4 = ggplot()+
+  geom_pointrange(data = LZFMax.aov.results, aes(x = frequency, 
+                                                y = treatmentX1.4in.Chip.Seal,
+                                                ymin = treatmentX1.4in.Chip.Seal - LZFMax.aov.stderr$treatmentX1.4in.Chip.Seal,
+                                                 ymax =treatmentX1.4in.Chip.Seal + LZFMax.aov.stderr$treatmentX1.4in.Chip.Seal),
+                  colour = CS_1.4_col) +
   theme_bw(base_line_size = 1)+
   scale_x_log10()+
-  labs(title = "LZFMax ANOVA Chip Seal Coefficients", x = "Frequency (Hz)", y = "Sound Intensity (dB)")+
-  ylim(0,75)
+  labs(title = "LZFMax ANOVA 1/4in Chip Seal Coefficients", 
+       x = "Frequency (Hz)", 
+       y = "Coefficent of Change in Sound Intensity from Pre-Treatment (dB)")  + 
+  geom_hline(yintercept = 0)+
+  ylim(-12,12)
+
+CS_3.8_col = c()
+CS_3.8_col = ifelse(abs(LZFMax.aov.results$treatmentX3.8in.Chip.Seal)>
+                          LZFMax.aov.stderr$treatmentX3.8in.Chip.Seal,
+       ifelse(LZFMax.aov.results$treatmentX3.8in.Chip.Seal<0, "blue", "red"),"gray")
+
+LZFMax_Chip.Seal.3.8 = ggplot()+
+  geom_pointrange(data = LZFMax.aov.results, aes(x = frequency, 
+                                                y = treatmentX3.8in.Chip.Seal,
+                                                ymin = treatmentX3.8in.Chip.Seal - LZFMax.aov.stderr$treatmentX3.8in.Chip.Seal,
+                                                 ymax =treatmentX3.8in.Chip.Seal + LZFMax.aov.stderr$treatmentX3.8in.Chip.Seal),
+                  colour = CS_3.8_col) +
+  theme_bw(base_line_size = 1)+
+  scale_x_log10()+
+  labs(title = "LZFMax ANOVA 3/8in Chip Seal Coefficients", 
+       x = "Frequency (Hz)", 
+       y = "Coefficent of Change in Sound Intensity from Pre-Treatment (dB)")  + 
+  geom_hline(yintercept = 0)+
+  ylim(-12,12)
+
+TII_Micro_col = c()
+TII_Micro_col = ifelse(abs(LZFMax.aov.results$treatmentType.II.Microsurfacing)>
+                          LZFMax.aov.stderr$treatmentType.II.Microsurfacing,
+       ifelse(LZFMax.aov.results$treatmentType.II.Microsurfacing<0, "blue", "red"),"gray")
+
+LZFMax_Microsurfacing.II = ggplot()+
+  geom_pointrange(data = LZFMax.aov.results, aes(x = frequency, 
+                                                y = treatmentType.II.Microsurfacing,
+                                                ymin=treatmentType.II.Microsurfacing -
+                                                  LZFMax.aov.stderr$treatmentType.II.Microsurfacing,
+                                                 ymax=treatmentType.II.Microsurfacing +
+                                                  LZFMax.aov.stderr$treatmentType.II.Microsurfacing),
+                  colour = TII_Micro_col) +
+  theme_bw(base_line_size = 1)+
+  scale_x_log10()+
+  labs(title = "LZFMax ANOVA Type II Microsurfacing Coefficients", 
+       x = "Frequency (Hz)", 
+       y = "Coefficent of Change in Sound Intensity from Pre-Treatment (dB)")  + 
+  geom_hline(yintercept = 0)+
+  ylim(-12,12)
+
+TIII_Micro_col = c()
+TIII_Micro_col = ifelse(abs(LZFMax.aov.results$treatmentType.III.Microsurfacing)>
+                          LZFMax.aov.stderr$treatmentType.III.Microsurfacing,
+       ifelse(LZFMax.aov.results$treatmentType.III.Microsurfacing<0, "blue", "red"),"gray")
+
+LZFMax_Microsurfacing.III = ggplot()+
+  geom_pointrange(data = LZFMax.aov.results, aes(x = frequency, 
+                                                y = treatmentType.III.Microsurfacing,
+                                                ymin=treatmentType.III.Microsurfacing -
+                                                  LZFMax.aov.stderr$treatmentType.III.Microsurfacing,
+                                                 ymax=treatmentType.III.Microsurfacing +
+                                                  LZFMax.aov.stderr$treatmentType.III.Microsurfacing),
+                  colour = TIII_Micro_col) +
+  theme_bw(base_line_size = 1)+
+  scale_x_log10()+
+  labs(title = "LZFMax ANOVA Type II Microsurfacing Coefficients", 
+       x = "Frequency (Hz)", 
+       y = "Coefficent of Change in Sound Intensity from Pre-Treatment (dB)")  + 
+  geom_hline(yintercept = 0)+
+  ylim(-12,12)
+
+
+grid.arrange(LZFMax_Chip.Seal.1.4,LZFMax_Chip.Seal.3.8,LZFMax_Microsurfacing.II, LZFMax_Microsurfacing.III, nrow = 4)
+
+```
+
+```{r}
+#ANOVA Model on Macro Treatment Types LZFMax
+LZFMax_l = filter(LZFMax_l, Year != "2019")
+
+LZFMax.aov.macro.results = vector()
+LZFMax.aov.macro.stderr = vector()
+frequencies = vector()
+
+for (freq in names(LZFMax_l[16:41])){
+  an.results = lm(LZFMax_l[[freq]] ~ -1+macro_treatment + pavetemp * speed+Year, data = LZFMax_l)
+  frequencies = rbind(frequencies, c(as.numeric(substr(freq, 2, nchar(freq)))))
+  LZFMax.aov.macro.results = rbind(LZFMax.aov.macro.results, coef(an.results))
+  LZFMax.aov.macro.stderr = rbind(LZFMax.aov.macro.stderr, coef(summary(an.results))[,"Std. Error"])
+}
+
+LZFMax.aov.macro.results = data.frame(LZFMax.aov.macro.results)
+LZFMax.aov.macro.results = cbind(LZFMax.aov.macro.results, frequency = frequencies)
+
+LZFMax.aov.macro.stderr = data.frame(LZFMax.aov.macro.stderr)
+LZFMax.aov.macro.stderr = cbind(LZFMax.aov.macro.stderr, frequency = frequencies)
+
+```
+##Plotting ANOVA coefficients of sound intensity for LZFMax
+Predictors: Macro Treatment type, pavement temperature, speed, and year
+```{r fig.width = 15}
+#Plot Macro Treatment Type Results LZFMax
+LZFMax_Chip.Seal = ggplot()+
+  geom_pointrange(data = LZFMax.aov.macro.results, aes(x=frequency, y = macro_treatmentChip.Seal,
+                                                 ymin =macro_treatmentChip.Seal - 
+                                                   LZFMax.aov.macro.stderr$macro_treatmentChip.Seal,
+                                                 ymax =macro_treatmentChip.Seal +
+                                                   LZFMax.aov.macro.stderr$macro_treatmentChip.Seal))+
+  theme_bw(base_line_size = 1)+
+  scale_x_log10()+
+  labs(title = "LZFMax ANOVA Chip Seal Coefficients",
+       x = "Frequency (Hz)",
+       y = "Coefficient of Sound Intensity (dB)")+
+  ylim(-25,75)
 
 LZFMax_Microsurfacing = ggplot()+
-  geom_pointrange(data = LZFMax.aov.results, aes(x=frequency, y = macro_treatmentMicrosurfacing,
-                                                 ymin =macro_treatmentMicrosurfacing + LZFMax.aov.stderr$macro_treatmentMicrosurfacing*-2,
-                                                 ymax =macro_treatmentMicrosurfacing +LZFMax.aov.stderr$macro_treatmentMicrosurfacing*2))+
+  geom_pointrange(data = LZFMax.aov.macro.results, aes(x=frequency, y = macro_treatmentMicrosurfacing,
+                                                 ymin =macro_treatmentMicrosurfacing - 
+                                                   LZFMax.aov.macro.stderr$macro_treatmentMicrosurfacing,
+                                                 ymax =macro_treatmentMicrosurfacing +
+                                                   LZFMax.aov.macro.stderr$macro_treatmentMicrosurfacing))+
   theme_bw(base_line_size = 1)+
   scale_x_log10()+
-  labs(title = "LZFMax ANOVA Microsurfacing Coefficients", x = "Frequency (Hz)", y = "Sound Intensity (dB)")+
-  ylim(0,75)
+  labs(title = "LZFMax ANOVA Microsurfacing Coefficients",
+       x = "Frequency (Hz)",
+       y = "Coefficient of Sound Intensity (dB)")+
+  ylim(-25,75)
 
 grid.arrange(LZFMax_Chip.Seal, LZFMax_Microsurfacing, nrow = 2)
 ```
-
-
-
-
-
-
-
-
