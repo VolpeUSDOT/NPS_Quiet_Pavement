@@ -13,6 +13,16 @@ output:
 <!-- saved from url=(0014)about:internet -->
 <!-- This needs to be manually added to the second line of the html -->
 
+<!-- 
+TODO possibly:
+
+- Update the treatment names in the table
+- Repeat all for onboard measurements
+- Compare results with original report draft
+- Use 2019 data in addition to 2018
+
+-->
+
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = F, warning=F, message=F)
 
@@ -93,32 +103,30 @@ LZFMax_l <- LZFMax_l %>%
 
 Goal is to assess the noise measurements from passby measurements in 2018, where four quiet pavement treatments were applied to test areas: 1/4 in chip seal, 3/8 in chip seal, Type II microsurfacing, and Type III microsurfacing. 
 
-There are eight sites, and four pavement treatments; each pavement treatment is replicated at two sites. Sound intensity was measured pre-treatment aand post-treatment.
+There are eight sites, and four pavement treatments; each pavement treatment is replicated at two sites. Sound intensity was measured pre-treatment and post-treatment.
 
-In the original assessment, overall the Type II microsurfacing was found to reduce overall sound intensity sound from OBSI measuremnts from 99.2 dB on average to 97.6. Other treatments did not on average reduce sound levels.
+In the original assessment, overall the Type II microsurfacing was found to reduce overall sound intensity sound from OBSI measurements from 99.2 dB on average to 97.6. Other treatments did not on average reduce sound levels.
 
-This analysis focuses on the observational passby data, where vehicle type varies, and assessess the effects of speed and pavement temperature in addition to experimental treatments.
+This analysis focuses on the observational passby data, where vehicle type varies, and assesses the effects of speed and pavement temperature in addition to experimental treatments.
 
-In the table below, SD_pavetemp is not applicable when the value is 0, because the same pavement temperature measurement was used throughout the trial.
+In the table below, SD_pavetemp is not applicable when the value is 0, because the same pavement temperature measurement was used throughout the trial. 2019 data are shown but only 2016 and 2018 data are used for statistical analyses. These analyses exclude non-passenger car vehicle types (i.e., bus or motorcycle measurements), which occurred infrequently and therefore vehicle type could not be used as a covariate in the analyses.
+
 
 ```{r summary_vals}
 Feq_summary <- LZFeq_l %>%
-  group_by(Year, treatment) %>%  
-  summarize(N_total = n(),
-            N_autos = sum(vehtype == 1),
-            Mean_speed = mean(speed),
-            SD_speed = sd(speed),
-            Mean_pavetemp = mean(pavetemp),
-            SD_pavetemp = sd(pavetemp))
+  group_by(Year, Treatment = treatment) %>%  
+  summarize('N total' = n(),
+            'N autos' = sum(vehtype == 1),
+            'Mean speed' = mean(speed),
+            'SD speed' = sd(speed),
+            'Mean pavement temp' = mean(pavetemp),
+            'SD pavement temp' = sd(pavetemp))
 
-FMax_summary <- LZFMax_l %>%
-  group_by(Year, treatment) %>%  
-  summarize(N_total = n(),
-            N_autos = sum(vehtype == 1),
-            Mean_speed = mean(speed),
-            SD_speed = sd(speed),
-            Mean_pavetemp = mean(pavetemp),
-            SD_pavetemp = sd(pavetemp))
+
+Feq_summary$Treatment <- sub("Type.II\\.", "Type II ", Feq_summary$Treatment)
+Feq_summary$Treatment <- sub("Type.III.", "Type III ", Feq_summary$Treatment)
+Feq_summary$Treatment <- sub("X1.4in.", "1/4 in ", Feq_summary$Treatment)
+Feq_summary$Treatment <- sub("X3.8in.", "3/8 in ", Feq_summary$Treatment)
 
 kable(Feq_summary,
       caption = "Summary of passby data collected by year and treatment.",
@@ -126,6 +134,7 @@ kable(Feq_summary,
   kable_styling(bootstrap_options = c("striped", "hover")) 
 
 ```
+
 # MANOVA Analysis with LZFeq
 
 ```{r manova_1 with LZFeq}
@@ -189,8 +198,8 @@ Response variables: treatment, pavement temperature, and speed
 ```{r fig.height = 20, fig.width = 15}
 #Set colors for each point for 1/4 in chip seal
 CS_1.4_col = c()
-CS_1.4_col = ifelse(abs(LZFeq.aov.results$treatmentX1.4in.Chip.Seal)>LZFeq.aov.stderr$treatmentX1.4in.Chip.Seal,
-       ifelse(LZFeq.aov.results$treatmentX1.4in.Chip.Seal<0, "blue", "red"),"gray")
+CS_1.4_col = ifelse(abs(LZFeq.aov.results$treatmentX1.4in.Chip.Seal) > LZFeq.aov.stderr$treatmentX1.4in.Chip.Seal,
+       ifelse(LZFeq.aov.results$treatmentX1.4in.Chip.Seal < 0, "blue", "red"),"gray")
 
 #Plot LZFeq 1/4in Chip Seal
 LZFeq_Chip.Seal.1.4 = ggplot()+
@@ -206,14 +215,14 @@ LZFeq_Chip.Seal.1.4 = ggplot()+
   scale_x_log10()+
   labs(title = "LZFeq ANOVA 1/4in Chip Seal Coefficients", 
        x = "Frequency (Hz)", 
-       y = "Coefficent of Change in Sound \n Intensity from Pre-Treatment (dB)")  + 
+       y = "Coefficient of Change in Sound \n Intensity from Pre-Treatment (dB)")  + 
   geom_hline(yintercept = 0)+
   ylim(-12,12)
 
 #Set colors for each point in 3/8 in chip seal
 CS_3.8_col = c()
-CS_3.8_col = ifelse(abs(LZFeq.aov.results$treatmentX3.8in.Chip.Seal)>LZFeq.aov.stderr$treatmentX3.8in.Chip.Seal,
-       ifelse(LZFeq.aov.results$treatmentX3.8in.Chip.Seal<0, "blue", "red"),"gray")
+CS_3.8_col = ifelse(abs(LZFeq.aov.results$treatmentX3.8in.Chip.Seal) > LZFeq.aov.stderr$treatmentX3.8in.Chip.Seal,
+       ifelse(LZFeq.aov.results$treatmentX3.8in.Chip.Seal < 0, "blue", "red"),"gray")
 
 #Plot LZFeq 3/8 in chip seal
 LZFeq_Chip.Seal.3.8 = ggplot()+
@@ -229,7 +238,7 @@ LZFeq_Chip.Seal.3.8 = ggplot()+
   scale_x_log10()+
   labs(title = "LZFeq ANOVA 3/8in Chip Seal Coefficients", 
        x = "Frequency (Hz)", 
-       y = "Coefficent of Change in Sound \n Intensity from Pre-Treatment (dB)")  + 
+       y = "Coefficient of Change in Sound \n Intensity from Pre-Treatment (dB)")  + 
   geom_hline(yintercept = 0)+
   ylim(-12,12)
 
@@ -252,7 +261,7 @@ LZFeq_Microsurfacing.II = ggplot()+
   scale_x_log10()+
   labs(title = "LZFeq ANOVA Type II Microsurfacing Coefficients", 
        x = "Frequency (Hz)", 
-       y = "Coefficent of Change in Sound \n Intensity from Pre-Treatment (dB)")  + 
+       y = "Coefficient of Change in Sound \n Intensity from Pre-Treatment (dB)")  + 
   geom_hline(yintercept = 0)+
   ylim(-12,12)
 
@@ -275,7 +284,7 @@ LZFeq_Microsurfacing.III = ggplot()+
   scale_x_log10()+
   labs(title = "LZFeq ANOVA Type III Microsurfacing Coefficients", 
        x = "Frequency (Hz)", 
-       y = "Coefficent of Change in Sound \n Intensity from Pre-Treatment (dB)")  + 
+       y = "Coefficient of Change in Sound \n Intensity from Pre-Treatment (dB)")  + 
   geom_hline(yintercept = 0)+
   ylim(-12,12)
 
@@ -283,6 +292,7 @@ LZFeq_Microsurfacing.III = ggplot()+
 grid.arrange(LZFeq_Chip.Seal.1.4,LZFeq_Chip.Seal.3.8,LZFeq_Microsurfacing.II, LZFeq_Microsurfacing.III, nrow = 4)
 
 ```
+
 ```{r}
 
 #ANOVA Model on Macro Treatment Types LZFeq
@@ -306,8 +316,11 @@ LZFeq.aov.macro.stderr = data.frame(LZFeq.aov.macro.stderr)
 LZFeq.aov.macro.stderr = cbind(LZFeq.aov.macro.stderr, frequency = frequencies)
 
 ```
-##Plotting ANOVA coefficients of sound intensity for LZFeq
+
+## Plotting ANOVA coefficients of sound intensity for LZFeq
+
 Predictors: Macro Treatment type, pavement temperature, speed, and year
+
 ```{r fig.height = 10, fig.width = 15}
 #Plot Macro Treatment Type Results LZFeq
 LZFeq_Chip.Seal = ggplot()+
@@ -351,7 +364,7 @@ LZFMax_l = filter(LZFMax_l, Year !="2019")
 Feq.man.macro <- manova(cbind(X63.0,X80.0,X100.0,X125.0,X160.0,X200.0,X250.0,X315.0,X400.0,X500.0,
                         X630.0,X800.0,X1000.0,X1250.0,X1600.0,X2000.0,X2500.0,X3150.0,X4000.0,
                         X5000.0,X6300.0,X8000.0,X10000.0,X12500.0,X16000.0,X20000.0)~
-                    macro_treatment+pavetemp*speed+Year, data = LZFMax_l)
+                    macro_treatment + pavetemp*speed + Year, data = LZFMax_l)
 summary(Feq.man.macro)
 
 Feq.man.micro <- manova(cbind(X63.0,X80.0,X100.0,X125.0,X160.0,X200.0,X250.0,X315.0,X400.0,X500.0,
@@ -383,7 +396,6 @@ LZFMax.aov.stderr = cbind(LZFMax.aov.stderr, frequency = frequencies)
 ```
 
 
-
 ## Plotting ANOVA coefficients of change in sound intensity from pretreatment for LZFMax
 
 Predictors: Treatment type, pavement temperature, and speed
@@ -407,7 +419,7 @@ LZFMax_Chip.Seal.1.4 = ggplot()+
   scale_x_log10()+
   labs(title = "LZFMax ANOVA 1/4in Chip Seal Coefficients", 
        x = "Frequency (Hz)", 
-       y = "Coefficent of Change in Sound \n Intensity from Pre-Treatment (dB)")  + 
+       y = "Coefficient of Change in Sound \n Intensity from Pre-Treatment (dB)")  + 
   geom_hline(yintercept = 0)+
   ylim(-12,12)
 
@@ -429,7 +441,7 @@ LZFMax_Chip.Seal.3.8 = ggplot()+
   scale_x_log10()+
   labs(title = "LZFMax ANOVA 3/8in Chip Seal Coefficients", 
        x = "Frequency (Hz)", 
-       y = "Coefficent of Change in Sound \n Intensity from Pre-Treatment (dB)")  + 
+       y = "Coefficient of Change in Sound \n Intensity from Pre-Treatment (dB)")  + 
   geom_hline(yintercept = 0)+
   ylim(-12,12)
 
@@ -451,7 +463,7 @@ LZFMax_Microsurfacing.II = ggplot()+
   scale_x_log10()+
   labs(title = "LZFMax ANOVA Type II Microsurfacing Coefficients", 
        x = "Frequency (Hz)", 
-       y = "Coefficent of Change in Sound \n Intensity from Pre-Treatment (dB)")  + 
+       y = "Coefficient of Change in Sound \n Intensity from Pre-Treatment (dB)")  + 
   geom_hline(yintercept = 0)+
   ylim(-12,12)
 
@@ -473,7 +485,7 @@ LZFMax_Microsurfacing.III = ggplot()+
   scale_x_log10()+
   labs(title = "LZFMax ANOVA Type III Microsurfacing Coefficients", 
        x = "Frequency (Hz)", 
-       y = "Coefficent of Change in Sound \n Intensity from Pre-Treatment (dB)")  + 
+       y = "Coefficient of Change in Sound \n Intensity from Pre-Treatment (dB)")  + 
   geom_hline(yintercept = 0)+
   ylim(-12,12)
 
