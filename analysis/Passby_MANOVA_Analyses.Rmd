@@ -29,6 +29,7 @@ require(gridExtra)
 library(knitr)
 library(kableExtra)
 library(gtable)
+library(plotly)
 
 
 codeloc = ifelse(file.exists('~/git/NPS_Quiet_Pavement'),
@@ -53,13 +54,6 @@ LZFMax <- data.frame(predictors, LZFMax)
 LZFeq <- LZFeq %>% mutate(macro_treatment = ifelse(Microsurfacing == 1, 'Microsurfacing', 'Chip.Seal')) 
 LZFMax <- LZFMax %>% mutate(macro_treatment = ifelse(Microsurfacing == 1, 'Microsurfacing', 'Chip.Seal')) 
 
-# Convert to long format. Organize by treatment, with four levels for the treatments in 2018. 
-# LZFeq_l <- LZFeq %>% 
-#   gather(key = yr_treatment, value, X3.8in.Chip.Seal:Type.III.Microsurfacing) %>%
-#   mutate(macro_treatment = ifelse(Microsurfacing == 1, 'Microsurfacing', 'Chip.Seal')) %>%
-#   select(-Chip.Seal, -Microsurfacing, -value)
-
-# Manual loop. gather is not working as expected (grouping across years)
 levs = c('X3.8in.Chip.Seal', 'X1.4in.Chip.Seal', 'Type.II.Microsurfacing', 'Type.III.Microsurfacing')
 cols = names(LZFeq)[c(1:6, 11:48)]
 
@@ -70,11 +64,6 @@ for(l in levs){
   LZFeq_l = rbind(LZFeq_l, ll)
   
 }
-
-# LZFMax_l <- LZFMax %>% 
-#   gather(key = treatment, value, X3.8in.Chip.Seal:Type.III.Microsurfacing) %>%
-#   mutate(macro_treatment = ifelse(Microsurfacing == 1, 'Microsurfacing', 'Chip.Seal')) %>%
-#   select(-Chip.Seal, -Microsurfacing, -value)
 
 cols = names(LZFMax)[c(1:6, 11:48)]
 
@@ -353,6 +342,68 @@ LZFeq_Microsurfacing.III = ggplot()+
 #Arrange plots in grid
 grid.arrange(LZFeq_Chip.Seal.1.4,LZFeq_Chip.Seal.3.8,LZFeq_Microsurfacing.II, LZFeq_Microsurfacing.III, nrow = 4)
 
+```
+
+## Plotting standardized curves
+
+The following shows the predicted sound intensity levels at standardized pavement temperature (90 degrees) and vehicle speed (50 mph). Two versions are shown, a point plot and a 'ribbon plot'. Both show the predicted values, +/- 1 standard error. 
+
+These plot are interactive (static versions can be made as well); clicking on the legend will show or hide a specific treatment.
+
+```{r plotting_curves_LZFeq, fig.height = 8, fig.width = 10}
+
+# Use predvals
+predvals = LZFeq.aov.predvals
+predse = LZFeq.aov.predse
+
+predvals = gather(predvals, key = 'treatment', value = 'LZFeq',
+                  baseline_chipseal, X3.8in.Chip.Seal, X1.4in.Chip.Seal, Type.II.Microsurfacing, Type.III.Microsurfacing)
+
+predse = gather(predse, key = 'treatment', value = 'SE',
+                  baseline_chipseal, X3.8in.Chip.Seal, X1.4in.Chip.Seal, Type.II.Microsurfacing, Type.III.Microsurfacing)
+
+predvals = left_join(predvals, predse)
+
+# Plot 
+
+point_plot <- ggplot(predvals, aes(x = frequency,
+                     y = LZFeq,
+                     color = treatment)) +
+  geom_pointrange(aes(ymin = LZFeq - SE,
+                      ymax = LZFeq + SE), 
+                      size = 1) +
+  # geom_smooth() + 
+  geom_line() + 
+  theme_bw(base_line_size = 1,
+           base_size = 15) +
+  scale_x_log10() +
+  labs(title = "LZFeq at constant pavement temperature and speed by treatment", 
+       x = "Frequency (Hz)", 
+       y = "Sound Intensity (dB)")
+
+ggplotly(point_plot)
+
+# Ribbons
+ribbon_plot <- ggplot(predvals, aes(x = frequency,
+                     y = LZFeq,
+                     color = treatment)) +
+  geom_ribbon(aes(ymin = LZFeq - SE,
+              ymax = LZFeq + SE, 
+              fill = treatment,
+              color = NULL),
+              alpha = 0.3) +
+    geom_line() + 
+
+  theme_bw(base_line_size = 1,
+           base_size = 15) +
+  scale_x_log10() +
+  labs(title = "LZFeq at constant pavement temperature and speed by treatment", 
+       x = "Frequency (Hz)", 
+       y = "Sound Intensity (dB)")
+
+ggplotly(ribbon_plot)
+
+  
 ```
 
 # MANOVA Analysis with LZFMax
