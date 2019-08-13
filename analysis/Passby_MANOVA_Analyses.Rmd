@@ -15,10 +15,11 @@ output:
 
 <!-- 
 TODO:
-- Validate calculation of predvals from coefficients for manual calculation
+- Validate calculation of predvals from coefficients for manual calculation - Done, see Manual_Predvals_Calcs.R
 - Look at 95% confidence intervals instead of +- 1 standard error. SEM = s.d. / sqrt (n). 95% confidence interval at the level of individual observation is s.d. * 1.96, at the level of a mean value is s.e. * 1.96
 - Use 2019 data in addition to 2018 - Done
 - Delete LZFmax output - Done
+- Edit to include 50 Hz throughout - Done
 -->
 
 ```{r setup, include=FALSE}
@@ -32,7 +33,6 @@ library(knitr)
 library(kableExtra)
 library(gtable)
 library(plotly)
-
 
 codeloc = ifelse(file.exists('~/git/NPS_Quiet_Pavement'),
                  "~/git/NPS_Quiet_Pavement", "~/GitHub/NPS_Quiet_Pavement")
@@ -83,7 +83,6 @@ LZFeq_l <- LZFeq_l %>%
 LZFMax_l <- LZFMax_l %>%
   mutate(treatment = ifelse(Year == '2016', 'baseline_chipseal', treatment))
 
-
 ```
 
 # Overview
@@ -133,19 +132,19 @@ LZFeq_l_19 = filter(LZFeq_l, Year !="2018") # Save a 2016 to 2019 comparison dat
 
 LZFeq_l = filter(LZFeq_l, Year !="2019")
 
-Feq.man.macro <- manova(cbind(X63.0,X80.0,X100.0,X125.0,X160.0,X200.0,X250.0,X315.0,X400.0,X500.0,
+Feq.man.macro <- manova(cbind(X50.0, X63.0, X80.0,X100.0,X125.0,X160.0,X200.0,X250.0,X315.0,X400.0,X500.0,
                         X630.0,X800.0,X1000.0,X1250.0,X1600.0,X2000.0,X2500.0,X3150.0,X4000.0,
                         X5000.0,X6300.0,X8000.0,X10000.0,X12500.0,X16000.0,X20000.0)~
                     macro_treatment + pavetemp * speed , data = LZFeq_l)
 
 
-Feq.man.micro <- manova(cbind(X63.0,X80.0,X100.0,X125.0,X160.0,X200.0,X250.0,X315.0,X400.0,X500.0,
+Feq.man.micro <- manova(cbind(X50.0, X63.0, X80.0,X100.0,X125.0,X160.0,X200.0,X250.0,X315.0,X400.0,X500.0,
                         X630.0,X800.0,X1000.0,X1250.0,X1600.0,X2000.0,X2500.0,X3150.0,X4000.0,
                         X5000.0,X6300.0,X8000.0,X10000.0,X12500.0,X16000.0,X20000.0)~
                       treatment + pavetemp * speed, data = LZFeq_l)
 
 
-Feq.man.micro2 <- manova(cbind(X63.0,X80.0,X100.0,X125.0,X160.0,X200.0,X250.0,X315.0,X400.0,X500.0,
+Feq.man.micro2 <- manova(cbind(X50.0, X63.0, X80.0,X100.0,X125.0,X160.0,X200.0,X250.0,X315.0,X400.0,X500.0,
                         X630.0,X800.0,X1000.0,X1250.0,X1600.0,X2000.0,X2500.0,X3150.0,X4000.0,
                         X5000.0,X6300.0,X8000.0,X10000.0,X12500.0,X16000.0,X20000.0)~
                       treatment + pavetemp * speed + treatment:speed, data = LZFeq_l)
@@ -158,7 +157,7 @@ Using MANOVA, we see that there are strong effects of all the predictors on nois
 
 Pillai's trace is a test statistic used in multivariate analyses. It is based on the eigenvalues associated with each predictor, across all the sound intensity frequencies. A larger value indicates that this predictor explains more of the difference in the response data (the matrix of all the sound intensity levels across frequencies). In order to interpret the statistical significance of this test statistic, we examine the p-value. This represents whether the test statistic is larger than expected by chance; a p-value less than 0.05 is considered statistically significant. 
 
-Frequencies from 63 Hz to 20 kHz were used for this analysis, covering 26 1/3 octave band frequencies. 
+Frequencies from 50 Hz to 20 kHz were used for this analysis, covering 27 1/3 octave band frequencies. 
 
 ```{r overall summary}
 # summary(Feq.man.macro)
@@ -187,8 +186,8 @@ pred_frame = expand.grid(treatment = unique(LZFeq_l$treatment),
                          pavetemp = pt)
 
 
-for (freq in names(LZFeq_l[18:43])){
-  # freq = names(LZFeq_l[18])
+for (freq in names(LZFeq_l[17:43])){
+  # freq = names(LZFeq_l[17])
   an.results = lm(LZFeq_l[[freq]] ~ treatment * speed + pavetemp * speed, data = LZFeq_l)
   
   frequencies = rbind(frequencies, c(as.numeric(substr(freq, 2, nchar(freq)))))
@@ -419,7 +418,7 @@ ggplotly(ribbon_plot)
 
 LZFeq_l = LZFeq_l_19 # Over-write the 2018 version for use with the same code here.
 
-Feq.man.micro2 <- manova(cbind(X63.0,X80.0,X100.0,X125.0,X160.0,X200.0,X250.0,X315.0,X400.0,X500.0,
+Feq.man.micro2 <- manova(cbind(X50.0, X63.0, X80.0,X100.0,X125.0,X160.0,X200.0,X250.0,X315.0,X400.0,X500.0,
                         X630.0,X800.0,X1000.0,X1250.0,X1600.0,X2000.0,X2500.0,X3150.0,X4000.0,
                         X5000.0,X6300.0,X8000.0,X10000.0,X12500.0,X16000.0,X20000.0)~
                       treatment + pavetemp * speed + treatment:speed, data = LZFeq_l)
@@ -427,7 +426,7 @@ Feq.man.micro2 <- manova(cbind(X63.0,X80.0,X100.0,X125.0,X160.0,X200.0,X250.0,X3
 micro.coeff = coefficients(Feq.man.micro2)
 ```
 
-For the 2016 to 2016 comparison, all predictore remained significant, except that the interaction between pavement temperature and speed became only marginally significant (p = 0.058). The variable is retained here for comparison with the previous analysis of 2016 to 2018 data.
+For the 2016 to 2016 comparison, all predictors remained significant, except that the interaction between pavement temperature and speed became only marginally significant (p = 0.076). The variable is retained here for comparison with the previous analysis of 2016 to 2018 data.
 
 ```{r overall summary 2019}
 summary(Feq.man.micro2)
@@ -452,7 +451,7 @@ pred_frame = expand.grid(treatment = unique(LZFeq_l$treatment),
                          pavetemp = pt)
 
 
-for (freq in names(LZFeq_l[18:43])){
+for (freq in names(LZFeq_l[17:43])){
   # freq = names(LZFeq_l[18])
   an.results = lm(LZFeq_l[[freq]] ~ treatment * speed + pavetemp * speed, data = LZFeq_l)
   
