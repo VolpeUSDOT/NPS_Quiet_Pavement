@@ -163,9 +163,22 @@ Frequencies from 50 Hz to 20 kHz were used for this analysis, covering 27 1/3 oc
 # summary(Feq.man.macro)
 
 # summary(Feq.man.micro)
+sum_2018 <- summary(Feq.man.micro2)
 
-summary(Feq.man.micro2)
+sum_2018$stats[,2] <- round(sum_2018$stats[,2], 3)
+sum_2018$stats[,3] <- round(sum_2018$stats[,3], 3)
 
+sum_2018$stats[,6] <- ifelse(sum_2018$stats[,6] < 0.001, '< 0.001', round(sum_2018$stats[,6], 3))
+sum_2018$stats[is.na(sum_2018$stats)] = ""
+
+kable(sum_2018$stats,
+      align = 'r',
+      caption = "Summary of MANOVA analysis for 2018 treatments compared to 2016.",
+      digits = 3) %>%
+  kable_styling(bootstrap_options = c("striped", "hover"))
+
+write.csv(sum_2018$stats, file = 'MANOVA_2018.csv')
+                  
 ```
 
 ```{r manova_post_hoc with LZFeq1}
@@ -429,7 +442,24 @@ micro.coeff = coefficients(Feq.man.micro2)
 For the 2016 to 2016 comparison, all predictors remained significant, except that the interaction between pavement temperature and speed became only marginally significant (p = 0.076). The variable is retained here for comparison with the previous analysis of 2016 to 2018 data.
 
 ```{r overall summary 2019}
-summary(Feq.man.micro2)
+# summary(Feq.man.micro2)
+
+sum_2019 <- summary(Feq.man.micro2)
+
+sum_2019$stats[,2] <- round(sum_2019$stats[,2], 3)
+sum_2019$stats[,3] <- round(sum_2019$stats[,3], 3)
+
+sum_2019$stats[,6] <- ifelse(sum_2019$stats[,6] < 0.001, '< 0.001', round(sum_2019$stats[,6], 3))
+sum_2019$stats[is.na(sum_2019$stats)] = ""
+
+kable(sum_2019$stats,
+      align = 'r',
+      caption = "Summary of MANOVA analysis for 2019 treatments compared to 2016.",
+      digits = 3) %>%
+  kable_styling(bootstrap_options = c("striped", "hover"))
+
+write.csv(sum_2019$stats, file = 'MANOVA_2019.csv')
+                  
 
 ```
 
