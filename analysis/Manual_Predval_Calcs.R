@@ -2,7 +2,7 @@
 
 # To demonstrate how we calculate predicted values using the coefficients.
 
-rootdir <- '//vntscex.local/DFS/Projects/PROJ-VXP700/_J1J3_Death Valley Quieter Pavement/For Dan/Passby_Model_Output'
+rootdir <- '//vntscex.local/DFS/Projects/PROJ-VXP700/_J1J3_Death Valley Quieter Pavement/Analysis/For Dan/Passby_Model_Output'
 setwd(rootdir)
 
 # Read in coefs and predvals
