@@ -37,7 +37,7 @@ library(plotly)
 codeloc = ifelse(file.exists('~/git/NPS_Quiet_Pavement'),
                  "~/git/NPS_Quiet_Pavement", "~/GitHub/NPS_Quiet_Pavement")
 
-rootdir <- 'C:/Quiet_Pavement_Local'
+rootdir <- file.path(codeloc, 'Data')
 knitr::opts_knit$set(root.dir = rootdir)
 
 # Read in data prepared by Initial EDA Exploratory.ipynb, and drop the first column of rownames.
@@ -397,7 +397,9 @@ point_plot <- ggplot(predvals, aes(x = frequency,
        x = "Frequency (Hz)", 
        y = "Sound Intensity (dB)")
 
-ggplotly(point_plot)
+# TODO debug ggplotly
+# ggplotly(point_plot)
+point_plot
 
 # Ribbons
 ribbon_plot <- ggplot(predvals, aes(x = frequency,
@@ -671,7 +673,9 @@ point_plot <- ggplot(predvals, aes(x = frequency,
        x = "Frequency (Hz)", 
        y = "Sound Intensity (dB)")
 
-ggplotly(point_plot)
+# TODO debug ggplotly
+#ggplotly(point_plot)
+point_plot
 
 # Ribbons
 ribbon_plot <- ggplot(predvals, aes(x = frequency,
