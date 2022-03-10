@@ -1,5 +1,5 @@
 ---
-title: "Passby Noise Across Frequencies"
+title: "Death Valley Wayside Single Passby Analysis of Variance across Time, Frequency, and Pavement Conditions"
 output: 
   html_document:
     self_contained: true
@@ -14,12 +14,13 @@ output:
 <!-- This needs to be manually added to the second line of the html -->
 
 <!-- 
+DONE: commented out all manipulations of LZFmax metric
+
 TODO:
 - Validate calculation of predvals from coefficients for manual calculation - Done, see Manual_Predvals_Calcs.R
 - Look at 95% confidence intervals instead of +- 1 standard error. SEM = s.d. / sqrt (n). 95% confidence interval at the level of individual observation is s.d. * 1.96, at the level of a mean value is s.e. * 1.96
-- Use 2019 data in addition to 2018 - Done
-- Delete LZFmax output - Done
-- Edit to include 50 Hz throughout - Done
+- implement analysis for 2021 data 
+
 -->
 
 ```{r setup, include=FALSE}
@@ -40,22 +41,23 @@ codeloc = ifelse(file.exists('~/git/NPS_Quiet_Pavement'),
 rootdir <- file.path(codeloc, 'Data')
 knitr::opts_knit$set(root.dir = rootdir)
 
-# Read in data prepared by Initial EDA Exploratory.ipynb, and drop the first column of rownames.
+## Read in data and drop the first column of rownames
 predictors <- read.csv(file.path(rootdir, 'MANOVA_Predictors.csv')); predictors <- predictors[-grep('^X$', names(predictors))]
 
-# Format year
-predictors$Year <- factor(predictors$Year, labels = c('2016', '2018', '2019')) # From 0, 1, 2
+## Format year
+predictors$Year <- factor(predictors$Year, labels = c('2016', '2018', '2019', '2021')) # From 0, 1, 2, 3
 
 LZFeq <- read.csv(file.path(rootdir, 'MANOVA_LZFeq.csv')); LZFeq <- LZFeq[-grep('^X$', names(LZFeq))] 
-LZFMax <- read.csv(file.path(rootdir, 'MANOVA_LZFMax.csv')); LZFMax <- LZFMax[-grep('^X$', names(LZFMax))]
+#LZFMax <- read.csv(file.path(rootdir, 'MANOVA_LZFMax.csv')); LZFMax <- LZFMax[-grep('^X$', names(LZFMax))]
 
-# Bind predictors together with response values for easier manipulation
+## Bind predictors together with response values for easier manipulation
 LZFeq <- data.frame(predictors, LZFeq)
-LZFMax <- data.frame(predictors, LZFMax)
+#LZFMax <- data.frame(predictors, LZFMax)
 
 LZFeq <- LZFeq %>% mutate(macro_treatment = ifelse(Microsurfacing == 1, 'Microsurfacing', 'Chip.Seal')) 
-LZFMax <- LZFMax %>% mutate(macro_treatment = ifelse(Microsurfacing == 1, 'Microsurfacing', 'Chip.Seal')) 
+#LZFMax <- LZFMax %>% mutate(macro_treatment = ifelse(Microsurfacing == 1, 'Microsurfacing', 'Chip.Seal')) 
 
+## generate treatment column data and append to LZFeq to create LZFeq_l...I think
 levs = c('X3.8in.Chip.Seal', 'X1.4in.Chip.Seal', 'Type.II.Microsurfacing', 'Type.III.Microsurfacing')
 cols = names(LZFeq)[c(1:6, 11:48)]
 
@@ -67,58 +69,57 @@ for(l in levs){
   
 }
 
-cols = names(LZFMax)[c(1:6, 11:48)]
+#cols = names(LZFMax)[c(1:6, 11:48)]
+# 
+#LZFMax_l <- vector()
+#for(l in levs){
+#  ll = LZFMax[LZFMax[l] == 1, cols]
+#  ll$treatment = l
+#  LZFMax_l = rbind(LZFMax_l, ll)
+#}
 
-LZFMax_l <- vector()
-for(l in levs){
-  ll = LZFMax[LZFMax[l] == 1, cols]
-  ll$treatment = l
-  LZFMax_l = rbind(LZFMax_l, ll)
-}
-
-# Change treatment level for 2016 to baseline_chipseal
+## Change treatment level for 2016 to baseline_chipseal
 LZFeq_l <- LZFeq_l %>%
   mutate(treatment = ifelse(Year == '2016', 'baseline_chipseal', treatment))
 
-LZFMax_l <- LZFMax_l %>%
-  mutate(treatment = ifelse(Year == '2016', 'baseline_chipseal', treatment))
+#LZFMax_l <- LZFMax_l %>%
+#  mutate(treatment = ifelse(Year == '2016', 'baseline_chipseal', treatment))
 
 ```
 
 # Overview
 
-Goal is to assess the noise measurements from passby measurements in 2018, where four quiet pavement treatments were applied to test areas: 1/4 in chip seal, 3/8 in chip seal, Type II microsurfacing, and Type III microsurfacing. 
+Goal is to assess the noise measurements from wayside single passby measurements in 2016-2021. In 2018, four pavement surface treatments were applied to test areas: 1/4" chip seal, 3/8" chip seal, Type II microsurfacing, and Type III microsurfacing. 
 
-There are eight sites, and four pavement treatments; each pavement treatment is replicated at two sites. Sound intensity was measured pre-treatment and post-treatment.
+There are eight sites, and four surface treatments; each surface treatment is replicated at two sites. Sound pressure levels were measured pre-treatment and post-treatment.
 
-In the original assessment, overall the Type II microsurfacing was found to reduce overall sound intensity sound from OBSI measurements from 99.2 dB on average to 97.6. Other treatments did not on average reduce sound levels.
+In the original assessment, the Type II microsurfacing was found to reduce overall sound intensity sound from OBSI measurements on average, from 99.2 to 97.6 dB. Other treatments did not reduce sound intensity levels, on average.
 
-This analysis focuses on the observational passby data, where vehicle type varies, and assesses the effects of speed and pavement temperature in addition to experimental treatments.
+This analysis focuses on the wayside single passby data and assesses the effects of speed and pavement temperature in addition to surface treatments.
 
-In the table below, SD_pavetemp is not applicable when the value is 0, because the same pavement temperature measurement was used throughout the trial. 2019 data are shown but only 2016 and 2018 data are used for statistical analyses. These analyses exclude non-passenger car vehicle types (i.e., bus or motorcycle measurements), which occurred infrequently and therefore vehicle type could not be used as a covariate in the analyses.
+In the table below, SD_pavetemp is not applicable when the value is zero because the same pavement temperature was measured throughout the trial. These analyses exclude non-passenger car vehicle types (i.e., bus or motorcycle measurements), because they occurred infrequently and therefore vehicle type could not be used as a covariate in the analyses.
 
 
 ```{r summary_vals}
-Feq_summary <- LZFeq_l %>%
+LZFeq_summary <- LZFeq_l %>%
   group_by(Year, Treatment = treatment) %>%  
-  summarize('N total' = n(),
-            'N autos' = sum(vehtype == 1),
-            'Mean speed' = mean(speed),
-            'SD speed' = sd(speed),
-            'Mean pavement temp' = mean(pavetemp),
-            'SD pavement temp' = sd(pavetemp))
+  summarize('N autos' = sum(vehtype == 1),
+            'Mean Speed (mph)' = mean(speed),
+            'Speed SD (mph)' = sd(speed),
+            'Mean Pavement Temp (deg F)' = mean(pavetemp),
+            'Pavement Temp SD (deg F)' = sd(pavetemp))
 
 
-Feq_summary$Treatment <- sub("baseline_chipseal", "Baseline - Chip Seal", Feq_summary$Treatment)
-Feq_summary$Treatment <- sub("Type.II\\.", "Type II ", Feq_summary$Treatment)
-Feq_summary$Treatment <- sub("Type.III.", "Type III ", Feq_summary$Treatment)
-Feq_summary$Treatment <- sub("X1.4in.", "1/4 in ", Feq_summary$Treatment)
-Feq_summary$Treatment <- sub("X3.8in.", "3/8 in ", Feq_summary$Treatment)
-Feq_summary$Treatment <- sub("\\.", " ", Feq_summary$Treatment)
+LZFeq_summary$Treatment <- sub("baseline_chipseal", "Baseline - Chip Seal", LZFeq_summary$Treatment)
+LZFeq_summary$Treatment <- sub("Type.II\\.", "Type II ", LZFeq_summary$Treatment)
+LZFeq_summary$Treatment <- sub("Type.III.", "Type III ", LZFeq_summary$Treatment)
+LZFeq_summary$Treatment <- sub("X1.4in.", "1/4 in ", LZFeq_summary$Treatment)
+LZFeq_summary$Treatment <- sub("X3.8in.", "3/8 in ", LZFeq_summary$Treatment)
+LZFeq_summary$Treatment <- sub("\\.", " ", LZFeq_summary$Treatment)
 
 
-kable(Feq_summary,
-      caption = "Summary of passby data collected by year and treatment.",
+kable(LZFeq_summary,
+      caption = "Summary of passby data collected by year and surface treatment",
       digits = 2) %>% 
   kable_styling(bootstrap_options = c("striped", "hover")) 
 
@@ -128,42 +129,40 @@ kable(Feq_summary,
 
 ```{r manova_1 with LZFeq}
 
-LZFeq_l_19 = filter(LZFeq_l, Year !="2018") # Save a 2016 to 2019 comparison data set
+LZFeq_l_18 = filter(LZFeq_l, Year %in% c("2016", "2018")) # working dataset for current analysis is 2016 to 2018 comparison dataset
 
-LZFeq_l = filter(LZFeq_l, Year !="2019")
-
-Feq.man.macro <- manova(cbind(X50.0, X63.0, X80.0,X100.0,X125.0,X160.0,X200.0,X250.0,X315.0,X400.0,X500.0,
-                        X630.0,X800.0,X1000.0,X1250.0,X1600.0,X2000.0,X2500.0,X3150.0,X4000.0,
-                        X5000.0,X6300.0,X8000.0,X10000.0,X12500.0,X16000.0,X20000.0)~
-                    macro_treatment + pavetemp * speed , data = LZFeq_l)
+LZFeq.man.macrotreatment <- manova(cbind(X50, X63, X80,X100,X125,X160,X200,X250,X315,X400,X500,
+                        X630,X800,X1000,X1250,X1600,X2000,X2500,X3150,X4000,
+                        X5000,X6300,X8000,X10000,X12500,X16000,X20000)~
+                    macro_treatment + pavetemp * speed , data = LZFeq_l_18)
 
 
-Feq.man.micro <- manova(cbind(X50.0, X63.0, X80.0,X100.0,X125.0,X160.0,X200.0,X250.0,X315.0,X400.0,X500.0,
-                        X630.0,X800.0,X1000.0,X1250.0,X1600.0,X2000.0,X2500.0,X3150.0,X4000.0,
-                        X5000.0,X6300.0,X8000.0,X10000.0,X12500.0,X16000.0,X20000.0)~
-                      treatment + pavetemp * speed, data = LZFeq_l)
+LZFeq.man.microtreatment <- manova(cbind(X50, X63, X80,X100,X125,X160,X200,X250,X315,X400,X500,
+                        X630,X800,X1000,X1250,X1600,X2000,X2500,X3150,X4000,
+                        X5000,X6300,X8000,X10000,X12500,X16000,X20000)~
+                      treatment + pavetemp * speed, data = LZFeq_l_18)
 
 
-Feq.man.micro2 <- manova(cbind(X50.0, X63.0, X80.0,X100.0,X125.0,X160.0,X200.0,X250.0,X315.0,X400.0,X500.0,
-                        X630.0,X800.0,X1000.0,X1250.0,X1600.0,X2000.0,X2500.0,X3150.0,X4000.0,
-                        X5000.0,X6300.0,X8000.0,X10000.0,X12500.0,X16000.0,X20000.0)~
-                      treatment + pavetemp * speed + treatment:speed, data = LZFeq_l)
+LZFeq.man.microtreatment2 <- manova(cbind(X50, X63, X80,X100,X125,X160,X200,X250,X315,X400,X500,
+                        X630,X800,X1000,X1250,X1600,X2000,X2500,X3150,X4000,
+                        X5000,X6300,X8000,X10000,X12500,X16000,X20000)~
+                      treatment + pavetemp * speed + treatment:speed, data = LZFeq_l_18)
 
-macro.coeff = coefficients(Feq.man.macro)
-micro.coeff = coefficients(Feq.man.micro2)
+macrotreatment.coeff = coefficients(LZFeq.man.macrotreatment)
+microtreatment.coeff = coefficients(LZFeq.man.microtreatment2)
 ```
 
-Using MANOVA, we see that there are strong effects of all the predictors on noise values across the frequencies. The table shows the summary of the statistical test for the difference in sound intensity across frequencies attributable to each of the predictors: pavement temperature, speed, treatment, and the statistical interactions between temperature and speed, and between treatment and speed. All predictors were statistically significant, including the interactive effects of speed and temperature, and speed and treatment.
+Using MANOVA, we see that there are strong effects of all the predictors on noise levels across the frequency spectra. The table shows the summary of the statistical test for the difference in sound pressure level (LZFeq) across all 1/3 octave bands attributable to each of the predictors: pavement temperature, speed, surface treatment, and the statistical interactions between temperature and speed, and between surface treatment and speed. All predictors were statistically significant, including the interactive effects of speed and temperature, and speed and surface treatment.
 
-Pillai's trace is a test statistic used in multivariate analyses. It is based on the eigenvalues associated with each predictor, across all the sound intensity frequencies. A larger value indicates that this predictor explains more of the difference in the response data (the matrix of all the sound intensity levels across frequencies). In order to interpret the statistical significance of this test statistic, we examine the p-value. This represents whether the test statistic is larger than expected by chance; a p-value less than 0.05 is considered statistically significant. 
+Pillai's trace is a test statistic used in multivariate analyses. It is based on the eigenvalues associated with each predictor, across all 1/3 octave bands. A larger Pillai's value indicates that this predictor explains more of the difference in the response data (the matrix of all 1/3 octave band LZFeq values). In order to interpret the statistical significance of this test statistic, we examine the p-value. This represents whether the test statistic is larger than expected by chance; a p-value less than 0.05 is considered statistically significant. 
 
-Frequencies from 50 Hz to 20 kHz were used for this analysis, covering 27 1/3 octave band frequencies. 
+1/3 octave bands from 50 Hz to 20 kHz were used for this analysis. 
 
 ```{r overall summary}
-# summary(Feq.man.macro)
+# summary(LZFeq.man.macro)
 
-# summary(Feq.man.micro)
-sum_2018 <- summary(Feq.man.micro2)
+# summary(LZFeq.man.micro)
+sum_2018 <- summary(LZFeq.man.microtreatment2)
 
 sum_2018$stats[,2] <- round(sum_2018$stats[,2], 3)
 sum_2018$stats[,3] <- round(sum_2018$stats[,3], 3)
@@ -173,7 +172,7 @@ sum_2018$stats[is.na(sum_2018$stats)] = ""
 
 kable(sum_2018$stats,
       align = 'r',
-      caption = "Summary of MANOVA analysis for 2018 treatments compared to 2016.",
+      caption = "Summary of MANOVA analysis for 1-month post-treatment (2018) compared to pre-treatment (2016)",
       digits = 3) %>%
   kable_styling(bootstrap_options = c("striped", "hover"))
 
@@ -182,32 +181,30 @@ write.csv(sum_2018$stats, file = 'MANOVA_2018.csv')
 ```
 
 ```{r manova_post_hoc with LZFeq1}
-LZFeq_l = filter(LZFeq_l, Year != "2019")
-
 LZFeq.aov.results = vector()
 LZFeq.aov.stderr = vector()
-frequencies = vector()
+OneThirdOBs = vector()
 LZFeq.aov.predvals = vector()
 LZFeq.aov.predse = vector()
 
-# Creating 'standardized' values using predict. This evens out the pavetemp and speed to a uniform comparison
+## Creating 'standardized' values using predict. This evens out the pavetemp and speed to a uniform comparison
 pt = 90
 sp = 50
 
-pred_frame = expand.grid(treatment = unique(LZFeq_l$treatment),
+pred_frame = expand.grid(treatment = unique(LZFeq_l_18$treatment),
                          speed = sp,
                          pavetemp = pt)
 
 
-for (freq in names(LZFeq_l[17:43])){
-  # freq = names(LZFeq_l[17])
-  an.results = lm(LZFeq_l[[freq]] ~ treatment * speed + pavetemp * speed, data = LZFeq_l)
+for (freq in names(LZFeq_l_18[17:43])){
+  # freq = names(LZFeq_l_18[17])
+  an.results = lm(LZFeq_l_18[[freq]] ~ treatment * speed + pavetemp * speed, data = LZFeq_l_18)
   
-  frequencies = rbind(frequencies, c(as.numeric(substr(freq, 2, nchar(freq)))))
+  OneThirdOBs = rbind(OneThirdOBs, c(as.numeric(substr(freq, 2, nchar(freq)))))
   LZFeq.aov.results = rbind(LZFeq.aov.results, coef(an.results))
   LZFeq.aov.stderr = rbind(LZFeq.aov.stderr, coef(summary(an.results))[,"Std. Error"])
   
-  # Predict 
+  ## Predict 
   pred = predict(an.results, pred_frame, se.fit = T, interval = 'none')
   LZFeq.aov.predvals = rbind(LZFeq.aov.predvals, pred$fit)
   LZFeq.aov.predse = rbind(LZFeq.aov.predse, pred$se.fit)  
@@ -215,60 +212,60 @@ for (freq in names(LZFeq_l[17:43])){
 }
 
 LZFeq.aov.results = data.frame(LZFeq.aov.results)
-LZFeq.aov.results = cbind(frequency = frequencies, LZFeq.aov.results)
+LZFeq.aov.results = cbind(frequency = OneThirdOBs, LZFeq.aov.results)
 
 LZFeq.aov.stderr = data.frame(LZFeq.aov.stderr)
-LZFeq.aov.stderr = cbind(frequency = frequencies, LZFeq.aov.stderr)
+LZFeq.aov.stderr = cbind(frequency = OneThirdOBs, LZFeq.aov.stderr)
 
 LZFeq.aov.predvals = data.frame(LZFeq.aov.predvals)
 names(LZFeq.aov.predvals) = pred_frame$treatment
-LZFeq.aov.predvals = cbind(frequency = frequencies, LZFeq.aov.predvals)
+LZFeq.aov.predvals = cbind(frequency = OneThirdOBs, LZFeq.aov.predvals)
 
 LZFeq.aov.predse = data.frame(LZFeq.aov.predse)
 names(LZFeq.aov.predse) = pred_frame$treatment
-LZFeq.aov.predse = cbind(frequency = frequencies, LZFeq.aov.predse)
+LZFeq.aov.predse = cbind(frequency = OneThirdOBs, LZFeq.aov.predse)
 
-# Write output to files
+## Write output to files
 names(LZFeq.aov.results)[grep('Intercept', names(LZFeq.aov.results))] = 'Baseline'
 names(LZFeq.aov.stderr)[grep('Intercept', names(LZFeq.aov.stderr))] = 'Baseline'
 
-write.csv(LZFeq.aov.results, file.path(rootdir, 'LZFeq_ANOVA_Coefficients.csv'), row.names = F)
-write.csv(LZFeq.aov.stderr, file.path(rootdir, 'LZFeq_ANOVA_StdErr.csv'), row.names = F)
+write.csv(LZFeq.aov.results, file.path(rootdir, 'LZFeq_2018_ANOVA_Coefficients.csv'), row.names = F)
+write.csv(LZFeq.aov.stderr, file.path(rootdir, 'LZFeq_2018_ANOVA_StdErr.csv'), row.names = F)
 
-write.csv(LZFeq.aov.predvals, file.path(rootdir, 'LZFeq_ANOVA_PredictedVals.csv'), row.names = F)
-write.csv(LZFeq.aov.predse, file.path(rootdir, 'LZFeq_ANOVA_PredictedVals_StdErr.csv'), row.names = F)
+write.csv(LZFeq.aov.predvals, file.path(rootdir, 'LZFeq_2018_ANOVA_PredictedVals.csv'), row.names = F)
+write.csv(LZFeq.aov.predse, file.path(rootdir, 'LZFeq_2018_ANOVA_PredictedVals_StdErr.csv'), row.names = F)
 
 ``` 
 
 ## Post-hoc ANOVAs by LZFeq Frequency
 
-Plotting ANOVA change in sound intensity from pre-treatment for LZFeq.
+Plotting ANOVA LZFeq change from pre-treatment.
 
-Response variables: treatment, pavement temperature, and speed, as well as the interactions between treatment and speed, pavement temperature and speed.
+Response variables: treatment, pavement temperature, and speed, as well as the interactions between treatment and speed, as well as pavement temperature and speed.
 
-The plots are generated from the output of the statistical models, holding pavement temperature constant at 90 degrees and speed constant at 50 mph. The change in sound intensity is calculated as the difference between the predicted sound intensity at 90 degrees and 50 mph for a particular treatment, compared to the baseline pavement conditions in 2016 in the same conditions. The error bars are the standard errors for predicted sound intensity levels.
+The plots are generated from the output of the statistical models, holding pavement temperature constant at 90 degrees and speed constant at 50 mph. The change in LZFeq is calculated as the difference between the predicted sound levels at 90 degrees and 50 mph for a particular treatment, compared to the baseline pavement conditions in 2016 in the same conditions. The error bars are the standard errors for predicted LZFeq values.
 
-The predicted values at these conditions are saved as `LZFeq_ANOVA_PredictedVals.csv` and `LZFeq_ANOVA_PredictedVals_StdErr.csv`
+The predicted values at these conditions are saved as `LZFeq_2018_ANOVA_PredictedVals.csv` and `LZFeq_2018_ANOVA_PredictedVals_StdErr.csv`
 
-Compared with Figure 18 in DEVA_QPP_Report_Nov2106-May-2018_draft2 9-5-8.pdf.
+The plots below became Figure 18 in the DEVA QPP 1 month report.
 
 ```{r plotting_change_LZFeq, fig.height = 20, fig.width = 15}
 
 y_range = c(-10, 10)
 
-# Use predvals. Subtract from baseline to show difference.
+## Use predvals. Subtract from baseline to show difference.
 predvals = LZFeq.aov.predvals
 predse = LZFeq.aov.predse
 
 predvals[,3:6] = predvals[,3:6] - predvals[,2]
 
-#Set colors for each point for 1/4 in chip seal
+## Set colors for each point for 1/4" chip seal
 CS_1.4_col = c()
 CS_1.4_col = ifelse(abs(predvals$X1.4in.Chip.Seal) > predse$X1.4in.Chip.Seal,
        ifelse(predvals$X1.4in.Chip.Seal < 0, "blue", "red"),"gray")
 
-# Plot LZFeq 1/4in Chip Seal.
-# Since now we are including interaction between speed and treatment, also add the coefficient for the treatment at 50 mph
+## Plot LZFeq 1/4" chip seal
+## Since now we are including interaction between speed and treatment, also add the coefficient for the treatment at 50 mph
 LZFeq_Chip.Seal.1.4 = ggplot()+
   geom_pointrange(data = predvals,
                   aes(x = frequency,
@@ -280,18 +277,18 @@ LZFeq_Chip.Seal.1.4 = ggplot()+
   theme_bw(base_line_size = 1,
            base_size = 20)+
   scale_x_log10()+
-  labs(title = "LZFeq ANOVA 1/4in Chip Seal Coefficients", 
+  labs(title = 'One Month LZFeq ANOVA 1/4" Chip Seal Coefficients', 
        x = "Frequency (Hz)", 
-       y = "Change in Sound Intensity \nfrom Pre-Treatment (dB)")  + 
+       y = "LZFeq Difference \nfrom Pre-Treatment (dB)")  + 
   geom_hline(yintercept = 0) +
   ylim(y_range[1], y_range[2])
 
-#Set colors for each point in 3/8 in chip seal
+## Set colors for each point in 3/8" chip seal
 CS_3.8_col = c()
 CS_3.8_col = ifelse(abs(predvals$X3.8in.Chip.Seal) > predse$X3.8in.Chip.Seal,
        ifelse(predvals$X3.8in.Chip.Seal < 0, "blue", "red"),"gray")
 
-#Plot LZFeq 3/8 in chip seal
+## Plot LZFeq 3/8" chip seal
 LZFeq_Chip.Seal.3.8 = ggplot()+
   geom_pointrange(data = predvals, 
                   aes(x = frequency,
@@ -303,18 +300,18 @@ LZFeq_Chip.Seal.3.8 = ggplot()+
   theme_bw(base_line_size = 1,
            base_size = 20)+
   scale_x_log10()+
-  labs(title = "LZFeq ANOVA 3/8in Chip Seal Coefficients", 
+  labs(title = 'One Month LZFeq ANOVA 3/8" Chip Seal Coefficients', 
        x = "Frequency (Hz)", 
-       y = "Change in Sound Intensity \nfrom Pre-Treatment (dB)")  + 
+       y = "LZFeq Difference \nfrom Pre-Treatment (dB)")  + 
   geom_hline(yintercept = 0)+
   ylim(y_range[1], y_range[2])
 
-#Set colors for each point in type II microsurfacing
+## Set colors for each point in type II microsurfacing
 TII_Micro_col = c()
 TII_Micro_col = ifelse(abs(predvals$Type.II.Microsurfacing)>predse$Type.II.Microsurfacing,
        ifelse(predvals$Type.II.Microsurfacing<0, "blue", "red"),"gray")
 
-#Plot LZFeq type II microsurfacing
+## Plot LZFeq type II microsurfacing
 LZFeq_Microsurfacing.II = ggplot()+
   geom_pointrange(data = predvals,
                   aes(x = frequency, 
@@ -326,18 +323,18 @@ LZFeq_Microsurfacing.II = ggplot()+
   theme_bw(base_line_size = 1,
            base_size = 20)+
   scale_x_log10()+
-  labs(title = "LZFeq ANOVA Type II Microsurfacing Coefficients", 
+  labs(title = "One Month LZFeq ANOVA Type II Microsurfacing Coefficients", 
        x = "Frequency (Hz)", 
-       y = "Change in Sound Intensity \nfrom Pre-Treatment (dB)")  + 
+       y = "LZFeq Difference \nfrom Pre-Treatment (dB)")  + 
   geom_hline(yintercept = 0)+
   ylim(y_range[1], y_range[2])
 
-#Set colors for each point in type III microsurfacing
+## Set colors for each point in type III microsurfacing
 TIII_Micro_col = c()
 TIII_Micro_col = ifelse(abs(predvals$Type.III.Microsurfacing)>predse$Type.III.Microsurfacing,
        ifelse(predvals$Type.III.Microsurfacing<0, "blue", "red"),"gray")
 
-#Plot LZFeq Type III microsurfacing
+## Plot LZFeq Type III microsurfacing
 LZFeq_Microsurfacing.III = ggplot()+
   geom_pointrange(data = predvals,
                   aes(x = frequency, 
@@ -349,26 +346,26 @@ LZFeq_Microsurfacing.III = ggplot()+
   theme_bw(base_line_size = 1,
            base_size = 20)+
   scale_x_log10()+
-  labs(title = "LZFeq ANOVA Type III Microsurfacing Coefficients", 
+  labs(title = "One Month LZFeq ANOVA Type III Microsurfacing Coefficients", 
        x = "Frequency (Hz)", 
-       y = "Change in Sound Intensity \nfrom Pre-Treatment (dB)")  + 
+       y = "LZFeq Difference \nfrom Pre-Treatment (dB)")  + 
   geom_hline(yintercept = 0)+
   ylim(y_range[1], y_range[2])
 
-#Arrange plots in grid
+## Arrange plots in grid
 grid.arrange(LZFeq_Chip.Seal.1.4,LZFeq_Chip.Seal.3.8,LZFeq_Microsurfacing.II, LZFeq_Microsurfacing.III, nrow = 4)
 
 ```
 
 ## Plotting standardized curves
 
-The following shows the predicted sound intensity levels at standardized pavement temperature (90 degrees) and vehicle speed (50 mph). Two versions are shown, a point plot and a 'ribbon plot'. Both show the predicted values, +/- 1 standard error. 
+The following shows the predicted LZFeq levels at standardized pavement temperature (90 degrees) and vehicle speed (50 mph). Two versions are shown, a point plot and a 'ribbon plot'. Both show the predicted values, +/- 1 standard error. 
 
-These plot are interactive (static versions can be made as well); clicking on the legend will show or hide a specific treatment.
+The second plot is interactive; clicking on the legend will show or hide a specific treatment.
 
 ```{r plotting_curves_LZFeq, fig.height = 8, fig.width = 10}
 
-# Use predvals
+## Use predvals
 predvals = LZFeq.aov.predvals
 predse = LZFeq.aov.predse
 
@@ -380,7 +377,7 @@ predse = gather(predse, key = 'treatment', value = 'SE',
 
 predvals = left_join(predvals, predse)
 
-# Plot 
+## Plot 
 
 point_plot <- ggplot(predvals, aes(x = frequency,
                      y = LZFeq,
@@ -393,15 +390,13 @@ point_plot <- ggplot(predvals, aes(x = frequency,
   theme_bw(base_line_size = 1,
            base_size = 15) +
   scale_x_log10() +
-  labs(title = "LZFeq at constant pavement temperature and speed by treatment", 
+  labs(title = "One Month LZFeq by Surface Treatment \nat 90 deg F pavement temperature and 50 mph speed", 
        x = "Frequency (Hz)", 
-       y = "Sound Intensity (dB)")
+       y = "LZFeq (dB)")
 
-# TODO debug ggplotly
-# ggplotly(point_plot)
 point_plot
 
-# Ribbons
+## Ribbons
 ribbon_plot <- ggplot(predvals, aes(x = frequency,
                      y = LZFeq,
                      color = treatment)) +
@@ -415,9 +410,9 @@ ribbon_plot <- ggplot(predvals, aes(x = frequency,
   theme_bw(base_line_size = 1,
            base_size = 15) +
   scale_x_log10() +
-  labs(title = "LZFeq at constant pavement temperature and speed by treatment", 
+  labs(title = "One Month LZFeq by Surface Treatment \nat 90 deg F pavement temperature and 50 mph speed", 
        x = "Frequency (Hz)", 
-       y = "Sound Intensity (dB)")
+       y = "LZFeq (dB)")
 
 ggplotly(ribbon_plot)
 
@@ -431,22 +426,22 @@ ggplotly(ribbon_plot)
 
 ```{r manova_2019 with LZFeq}
 
-LZFeq_l = LZFeq_l_19 # Over-write the 2018 version for use with the same code here.
+LZFeq_l_19 = filter(LZFeq_l, Year %in% c("2016", "2019")) # save a 2016 to 2019 comparison dataset
 
-Feq.man.micro2 <- manova(cbind(X50.0, X63.0, X80.0,X100.0,X125.0,X160.0,X200.0,X250.0,X315.0,X400.0,X500.0,
-                        X630.0,X800.0,X1000.0,X1250.0,X1600.0,X2000.0,X2500.0,X3150.0,X4000.0,
-                        X5000.0,X6300.0,X8000.0,X10000.0,X12500.0,X16000.0,X20000.0)~
-                      treatment + pavetemp * speed + treatment:speed, data = LZFeq_l)
+LZFeq.man.microtreatment2 <- manova(cbind(X50, X63, X80,X100,X125,X160,X200,X250,X315,X400,X500,
+                        X630,X800,X1000,X1250,X1600,X2000,X2500,X3150,X4000,
+                        X5000,X6300,X8000,X10000,X12500,X16000,X20000)~
+                      treatment + pavetemp * speed + treatment:speed, data = LZFeq_l_19)
 
-micro.coeff = coefficients(Feq.man.micro2)
+microtreatment.coeff = coefficients(LZFeq.man.microtreatment2)
 ```
 
-For the 2016 to 2016 comparison, all predictors remained significant, except that the interaction between pavement temperature and speed became only marginally significant (p = 0.076). The variable is retained here for comparison with the previous analysis of 2016 to 2018 data.
+For the 2016 to 2019 comparison, all predictors remained significant, except that the interaction between pavement temperature and speed became only marginally significant (p = 0.076). The variable is retained here for comparison with the previous analysis of 2016 to 2018 data.
 
 ```{r overall summary 2019}
 # summary(Feq.man.micro2)
 
-sum_2019 <- summary(Feq.man.micro2)
+sum_2019 <- summary(LZFeq.man.microtreatment2)
 
 sum_2019$stats[,2] <- round(sum_2019$stats[,2], 3)
 sum_2019$stats[,3] <- round(sum_2019$stats[,3], 3)
@@ -456,7 +451,7 @@ sum_2019$stats[is.na(sum_2019$stats)] = ""
 
 kable(sum_2019$stats,
       align = 'r',
-      caption = "Summary of MANOVA analysis for 2019 treatments compared to 2016.",
+      caption = "Summary of MANOVA analysis for 1-year post-treatment (2019) compared to pre-treatment (2016)",
       digits = 3) %>%
   kable_styling(bootstrap_options = c("striped", "hover"))
 
@@ -466,32 +461,30 @@ write.csv(sum_2019$stats, file = 'MANOVA_2019.csv')
 ```
 
 ```{r manova_post_hoc with LZFeq 2019}
-LZFeq_l = filter(LZFeq_l, Year != "2018")
-
 LZFeq.aov.results = vector()
 LZFeq.aov.stderr = vector()
-frequencies = vector()
+OneThirdOBs = vector()
 LZFeq.aov.predvals = vector()
 LZFeq.aov.predse = vector()
 
-# Creating 'standardized' values using predict. This evens out the pavetemp and speed to a uniform comparison
+## Creating 'standardized' values using predict. This evens out the pavetemp and speed to a uniform comparison
 pt = 90
 sp = 50
 
-pred_frame = expand.grid(treatment = unique(LZFeq_l$treatment),
+pred_frame = expand.grid(treatment = unique(LZFeq_l_19$treatment),
                          speed = sp,
                          pavetemp = pt)
 
 
-for (freq in names(LZFeq_l[17:43])){
-  # freq = names(LZFeq_l[18])
-  an.results = lm(LZFeq_l[[freq]] ~ treatment * speed + pavetemp * speed, data = LZFeq_l)
+for (freq in names(LZFeq_l_19[17:43])){
+  # freq = names(LZFeq_l_19[18])
+  an.results = lm(LZFeq_l_19[[freq]] ~ treatment * speed + pavetemp * speed, data = LZFeq_l_19)
   
-  frequencies = rbind(frequencies, c(as.numeric(substr(freq, 2, nchar(freq)))))
+  OneThirdOBs = rbind(OneThirdOBs, c(as.numeric(substr(freq, 2, nchar(freq)))))
   LZFeq.aov.results = rbind(LZFeq.aov.results, coef(an.results))
   LZFeq.aov.stderr = rbind(LZFeq.aov.stderr, coef(summary(an.results))[,"Std. Error"])
   
-  # Predict 
+  ## Predict 
   pred = predict(an.results, pred_frame, se.fit = T, interval = 'none')
   LZFeq.aov.predvals = rbind(LZFeq.aov.predvals, pred$fit)
   LZFeq.aov.predse = rbind(LZFeq.aov.predse, pred$se.fit)  
@@ -499,52 +492,60 @@ for (freq in names(LZFeq_l[17:43])){
 }
 
 LZFeq.aov.results = data.frame(LZFeq.aov.results)
-LZFeq.aov.results = cbind(frequency = frequencies, LZFeq.aov.results)
+LZFeq.aov.results = cbind(frequency = OneThirdOBs, LZFeq.aov.results)
 
 LZFeq.aov.stderr = data.frame(LZFeq.aov.stderr)
-LZFeq.aov.stderr = cbind(frequency = frequencies, LZFeq.aov.stderr)
+LZFeq.aov.stderr = cbind(frequency = OneThirdOBs, LZFeq.aov.stderr)
 
 LZFeq.aov.predvals = data.frame(LZFeq.aov.predvals)
 names(LZFeq.aov.predvals) = pred_frame$treatment
-LZFeq.aov.predvals = cbind(frequency = frequencies, LZFeq.aov.predvals)
+LZFeq.aov.predvals = cbind(frequency = OneThirdOBs, LZFeq.aov.predvals)
 
 LZFeq.aov.predse = data.frame(LZFeq.aov.predse)
 names(LZFeq.aov.predse) = pred_frame$treatment
-LZFeq.aov.predse = cbind(frequency = frequencies, LZFeq.aov.predse)
+LZFeq.aov.predse = cbind(frequency = OneThirdOBs, LZFeq.aov.predse)
 
-# Write output to files
+## Write output to files
 names(LZFeq.aov.results)[grep('Intercept', names(LZFeq.aov.results))] = 'Baseline'
 names(LZFeq.aov.stderr)[grep('Intercept', names(LZFeq.aov.stderr))] = 'Baseline'
 
-write.csv(LZFeq.aov.results, file.path(rootdir, 'LZFeq_ANOVA_Coefficients_2019.csv'), row.names = F)
-write.csv(LZFeq.aov.stderr, file.path(rootdir, 'LZFeq_ANOVA_StdErr_2019.csv'), row.names = F)
+write.csv(LZFeq.aov.results, file.path(rootdir, 'LZFeq_2019_ANOVA_Coefficients.csv'), row.names = F)
+write.csv(LZFeq.aov.stderr, file.path(rootdir, 'LZFeq_2019_ANOVA_StdErr.csv'), row.names = F)
 
-write.csv(LZFeq.aov.predvals, file.path(rootdir, 'LZFeq_ANOVA_PredictedVals_2019.csv'), row.names = F)
-write.csv(LZFeq.aov.predse, file.path(rootdir, 'LZFeq_ANOVA_PredictedVals_StdErr_2019.csv'), row.names = F)
+write.csv(LZFeq.aov.predvals, file.path(rootdir, 'LZFeq_2019_ANOVA_PredictedVals.csv'), row.names = F)
+write.csv(LZFeq.aov.predse, file.path(rootdir, 'LZFeq_2019_ANOVA_PredictedVals_StdErr.csv'), row.names = F)
 
 ``` 
 
 ## Post-hoc ANOVAs by LZFeq Frequency
 
-Plotting ANOVA change in sound intensity from pre-treatment for LZFeq, comparing 2019 measurements to 2016. 
+Plotting ANOVA change in LZFeq from pretreatment, comparing 2019 measurements to 2016. 
+
+Response variables: treatment, pavement temperature, and speed, as well as the interactions between treatment and speed, as well as pavement temperature and speed.
+
+The plots are generated from the output of the statistical models, holding pavement temperature constant at 90 degrees and speed constant at 50 mph. The change in LZFeq is calculated as the difference between the predicted sound levels at 90 degrees and 50 mph for a particular treatment, compared to the baseline pavement conditions in 2016 in the same conditions. The error bars are the standard errors for predicted LZFeq values.
+
+The predicted values at these conditions are saved as `LZFeq_2019_ANOVA_PredictedVals.csv` and `LZFeq_2019_ANOVA_PredictedVals_StdErr.csv`
+
+The plots below became figure 29-32 in the DEVA QPP 1 year report.
 
 ```{r plotting_change_LZFeq 2019, fig.height = 20, fig.width = 15}
 
 y_range = c(-10, 10)
 
-# Use predvals. Subtract from baseline to show difference.
+## Use predvals. Subtract from baseline to show difference.
 predvals = LZFeq.aov.predvals
 predse = LZFeq.aov.predse
 
 predvals[,3:6] = predvals[,3:6] - predvals[,2]
 
-#Set colors for each point for 1/4 in chip seal
+## Set colors for each point for 1/4 in chip seal
 CS_1.4_col = c()
 CS_1.4_col = ifelse(abs(predvals$X1.4in.Chip.Seal) > predse$X1.4in.Chip.Seal,
        ifelse(predvals$X1.4in.Chip.Seal < 0, "blue", "red"),"gray")
 
-# Plot LZFeq 1/4in Chip Seal.
-# Since now we are including interaction between speed and treatment, also add the coefficient for the treatment at 50 mph
+## Plot LZFeq 1/4in Chip Seal.
+## Since now we are including interaction between speed and treatment, also add the coefficient for the treatment at 50 mph
 LZFeq_Chip.Seal.1.4 = ggplot()+
   geom_pointrange(data = predvals,
                   aes(x = frequency,
@@ -556,18 +557,18 @@ LZFeq_Chip.Seal.1.4 = ggplot()+
   theme_bw(base_line_size = 1,
            base_size = 20)+
   scale_x_log10()+
-  labs(title = "LZFeq ANOVA 1/4in Chip Seal Coefficients", 
+  labs(title = 'One Year LZFeq ANOVA 1/4" Chip Seal Coefficients', 
        x = "Frequency (Hz)", 
-       y = "Change in Sound Intensity \nfrom Pre-Treatment (dB)")  + 
+       y = "LZFeq Difference \nfrom Pre-Treatment (dB)")  + 
   geom_hline(yintercept = 0) +
   ylim(y_range[1], y_range[2])
 
-#Set colors for each point in 3/8 in chip seal
+## Set colors for each point in 3/8 in chip seal
 CS_3.8_col = c()
 CS_3.8_col = ifelse(abs(predvals$X3.8in.Chip.Seal) > predse$X3.8in.Chip.Seal,
        ifelse(predvals$X3.8in.Chip.Seal < 0, "blue", "red"),"gray")
 
-#Plot LZFeq 3/8 in chip seal
+## Plot LZFeq 3/8 in chip seal
 LZFeq_Chip.Seal.3.8 = ggplot()+
   geom_pointrange(data = predvals, 
                   aes(x = frequency,
@@ -579,18 +580,18 @@ LZFeq_Chip.Seal.3.8 = ggplot()+
   theme_bw(base_line_size = 1,
            base_size = 20)+
   scale_x_log10()+
-  labs(title = "LZFeq ANOVA 3/8in Chip Seal Coefficients", 
+  labs(title = 'One Year LZFeq ANOVA 3/8" Chip Seal Coefficients', 
        x = "Frequency (Hz)", 
-       y = "Change in Sound Intensity \nfrom Pre-Treatment (dB)")  + 
+       y = "LZFeq Difference \nfrom Pre-Treatment (dB)")  + 
   geom_hline(yintercept = 0)+
   ylim(y_range[1], y_range[2])
 
-#Set colors for each point in type II microsurfacing
+## Set colors for each point in type II microsurfacing
 TII_Micro_col = c()
 TII_Micro_col = ifelse(abs(predvals$Type.II.Microsurfacing)>predse$Type.II.Microsurfacing,
        ifelse(predvals$Type.II.Microsurfacing<0, "blue", "red"),"gray")
 
-#Plot LZFeq type II microsurfacing
+## Plot LZFeq type II microsurfacing
 LZFeq_Microsurfacing.II = ggplot()+
   geom_pointrange(data = predvals,
                   aes(x = frequency, 
@@ -602,18 +603,18 @@ LZFeq_Microsurfacing.II = ggplot()+
   theme_bw(base_line_size = 1,
            base_size = 20)+
   scale_x_log10()+
-  labs(title = "LZFeq ANOVA Type II Microsurfacing Coefficients", 
+  labs(title = "One Year LZFeq ANOVA Type II Microsurfacing Coefficients", 
        x = "Frequency (Hz)", 
-       y = "Change in Sound Intensity \nfrom Pre-Treatment (dB)")  + 
+       y = "LZFeq Difference \nfrom Pre-Treatment (dB)")  + 
   geom_hline(yintercept = 0)+
   ylim(y_range[1], y_range[2])
 
-#Set colors for each point in type III microsurfacing
+## Set colors for each point in type III microsurfacing
 TIII_Micro_col = c()
 TIII_Micro_col = ifelse(abs(predvals$Type.III.Microsurfacing)>predse$Type.III.Microsurfacing,
        ifelse(predvals$Type.III.Microsurfacing<0, "blue", "red"),"gray")
 
-#Plot LZFeq Type III microsurfacing
+## Plot LZFeq Type III microsurfacing
 LZFeq_Microsurfacing.III = ggplot()+
   geom_pointrange(data = predvals,
                   aes(x = frequency, 
@@ -625,26 +626,26 @@ LZFeq_Microsurfacing.III = ggplot()+
   theme_bw(base_line_size = 1,
            base_size = 20)+
   scale_x_log10()+
-  labs(title = "LZFeq ANOVA Type III Microsurfacing Coefficients", 
+  labs(title = "One Year LZFeq ANOVA Type III Microsurfacing Coefficients", 
        x = "Frequency (Hz)", 
-       y = "Change in Sound Intensity \nfrom Pre-Treatment (dB)")  + 
+       y = "LZFeq Difference \nfrom Pre-Treatment (dB)")  + 
   geom_hline(yintercept = 0)+
   ylim(y_range[1], y_range[2])
 
-#Arrange plots in grid
+## Arrange plots in grid
 grid.arrange(LZFeq_Chip.Seal.1.4,LZFeq_Chip.Seal.3.8,LZFeq_Microsurfacing.II, LZFeq_Microsurfacing.III, nrow = 4)
 
 ```
 
 ## Plotting standardized curves
 
-The following shows the predicted sound intensity levels at standardized pavement temperature (90 degrees) and vehicle speed (50 mph). Two versions are shown, a point plot and a 'ribbon plot'. Both show the predicted values, +/- 1 standard error. 
+The following shows the predicted LZFeq values at standardized pavement temperature (90 degrees) and vehicle speed (50 mph). Two versions are shown, a point plot and a 'ribbon plot'. Both show the predicted values, +/- 1 standard error. 
 
-These plot are interactive (static versions can be made as well); clicking on the legend will show or hide a specific treatment.
+The second plot is interactive; clicking on the legend will show or hide a specific treatment.
 
 ```{r plotting_curves_LZFeq 2019, fig.height = 8, fig.width = 10}
 
-# Use predvals
+## Use predvals
 predvals = LZFeq.aov.predvals
 predse = LZFeq.aov.predse
 
@@ -656,7 +657,7 @@ predse = gather(predse, key = 'treatment', value = 'SE',
 
 predvals = left_join(predvals, predse)
 
-# Plot 
+## Plot 
 
 point_plot <- ggplot(predvals, aes(x = frequency,
                      y = LZFeq,
@@ -669,12 +670,10 @@ point_plot <- ggplot(predvals, aes(x = frequency,
   theme_bw(base_line_size = 1,
            base_size = 15) +
   scale_x_log10() +
-  labs(title = "LZFeq at constant pavement temperature and speed by treatment, 2019", 
+  labs(title = "One Year LZFeq by Surface Treatment \nat 90 deg F pavement temperature and 50 mph speed", 
        x = "Frequency (Hz)", 
-       y = "Sound Intensity (dB)")
+       y = "LZFeq (dB)")
 
-# TODO debug ggplotly
-#ggplotly(point_plot)
 point_plot
 
 # Ribbons
@@ -691,12 +690,282 @@ ribbon_plot <- ggplot(predvals, aes(x = frequency,
   theme_bw(base_line_size = 1,
            base_size = 15) +
   scale_x_log10() +
-  labs(title = "LZFeq at constant pavement temperature and speed by treatment, 2019", 
+  labs(title = "One Year LZFeq by Surface Treatment \nat 90 deg F pavement temperature and 50 mph speed", 
        x = "Frequency (Hz)", 
-       y = "Sound Intensity (dB)")
+       y = "LZFeq (dB)")
 
 ggplotly(ribbon_plot)
 
   
 ```
+# 2021 MANOVA Analysis with LZFeq
 
+```{r manova_2021 with LZFeq}
+
+LZFeq_l_21 = filter(LZFeq_l, Year %in% c("2016", "2021")) # Save a 2016 to 2021 comparison dataset
+
+
+LZFeq.man.microtreatment2 <- manova(cbind(X50, X63, X80,X100,X125,X160,X200,X250,X315,X400,X500,
+                        X630,X800,X1000,X1250,X1600,X2000,X2500,X3150,X4000)~
+                      treatment + pavetemp * speed + treatment:speed, data = LZFeq_l_21)
+
+microtreatment.coeff = coefficients(LZFeq.man.microtreatment2)
+```
+
+The table shows the summary of the statistical test for the difference in sound pressure level (LZFeq) across all 1/3 octave bands attributable to each of the predictors: pavement temperature, speed, surface treatment, and the statistical interactions between temperature and speed, and between surface treatment and speed. Note that only 1/3 octave bands from 50 Hz to 4 kHz were included in this analysis. The high frequency analysis limit is due to the internal noise floor of the measurement equipment, which results in poor signal to noise ratio at high frequencies in areas with low ambient noise, such as Death Valley.
+
+Pillai's trace, shown in the third column of the table, is a test statistic used in multivariate analyses. It is based on the eigenvalues associated with each predictor, across all 1/3 octave bands. A larger Pillai's value indicates that the predictor explains more of the difference in the response data (the matrix of all 1/3 octave band LZFeq values). In order to interpret the statistical significance of this test statistic, we examine the p-value. The p-value represents whether the test statistic is larger than expected by chance. For this analysis, a p-value less than 0.05 is considered statistically significant.
+
+Using MANOVA, we see that there are strong effects of some predictors on the noise levels across the frequency spectra. All predictors were statistically significant at a level of $\alpha$=0.05, except for the interactive effect of speed and temperature, as the p-value of Pillai's test statistic is greater than 0.05. Speed and surface treatment are the strongest independent predictors of noise, as they both have large Pillai values with corresponding p-values less than 0.001.
+ 
+```{r overall summary 2021}
+#summary(LZFeq.man.microtreatment2)
+
+sum_2021 <- summary(LZFeq.man.microtreatment2)
+
+sum_2021$stats[,2] <- round(sum_2021$stats[,2], 3)
+sum_2021$stats[,3] <- round(sum_2021$stats[,3], 3)
+
+sum_2021$stats[,6] <- ifelse(sum_2021$stats[,6] < 0.001, '< 0.001', round(sum_2021$stats[,6], 3))
+sum_2021$stats[is.na(sum_2021$stats)] = ""
+
+kable(sum_2021$stats,
+      align = 'r',
+      caption = "Summary of MANOVA analysis for 3-years post-treatment (2021) compared to pre-treatment (2016)",
+      digits = 3) %>%
+  kable_styling(bootstrap_options = c("striped", "hover"))
+
+write.csv(sum_2021$stats, file = 'MANOVA_2021.csv')
+                  
+
+```
+
+```{r manova_post_hoc with LZFeq 2021}
+LZFeq.aov.results = vector()
+LZFeq.aov.stderr = vector()
+OneThirdOBs = vector()
+LZFeq.aov.predvals = vector()
+LZFeq.aov.predse = vector()
+
+## Creating 'standardized' values using predict. This evens out the pavetemp and speed to a uniform comparison
+pt = 90
+sp = 50
+
+pred_frame = expand.grid(treatment = unique(LZFeq_l_21$treatment),
+                         speed = sp,
+                         pavetemp = pt)
+
+
+for (freq in names(LZFeq_l_21[17:36])){
+  an.results = lm(LZFeq_l_21[[freq]] ~ treatment * speed + pavetemp * speed, data = LZFeq_l_21)
+  
+  OneThirdOBs = rbind(OneThirdOBs, c(as.numeric(substr(freq, 2, nchar(freq)))))
+  LZFeq.aov.results = rbind(LZFeq.aov.results, coef(an.results))
+  LZFeq.aov.stderr = rbind(LZFeq.aov.stderr, coef(summary(an.results))[,"Std. Error"])
+  
+  ## Predict 
+  pred = predict(an.results, pred_frame, se.fit = T, interval = 'none')
+  LZFeq.aov.predvals = rbind(LZFeq.aov.predvals, pred$fit)
+  LZFeq.aov.predse = rbind(LZFeq.aov.predse, pred$se.fit)  
+  
+}
+
+LZFeq.aov.results = data.frame(LZFeq.aov.results)
+LZFeq.aov.results = cbind(frequency = OneThirdOBs, LZFeq.aov.results)
+
+LZFeq.aov.stderr = data.frame(LZFeq.aov.stderr)
+LZFeq.aov.stderr = cbind(frequency = OneThirdOBs, LZFeq.aov.stderr)
+
+LZFeq.aov.predvals = data.frame(LZFeq.aov.predvals)
+names(LZFeq.aov.predvals) = pred_frame$treatment
+LZFeq.aov.predvals = cbind(frequency = OneThirdOBs, LZFeq.aov.predvals)
+
+LZFeq.aov.predse = data.frame(LZFeq.aov.predse)
+names(LZFeq.aov.predse) = pred_frame$treatment
+LZFeq.aov.predse = cbind(frequency = OneThirdOBs, LZFeq.aov.predse)
+
+## Write output to files
+names(LZFeq.aov.results)[grep('Intercept', names(LZFeq.aov.results))] = 'Baseline'
+names(LZFeq.aov.stderr)[grep('Intercept', names(LZFeq.aov.stderr))] = 'Baseline'
+
+write.csv(LZFeq.aov.results, file.path(rootdir, 'LZFeq_2021_ANOVA_Coefficients.csv'), row.names = F)
+write.csv(LZFeq.aov.stderr, file.path(rootdir, 'LZFeq_2021_ANOVA_StdErr.csv'), row.names = F)
+
+write.csv(LZFeq.aov.predvals, file.path(rootdir, 'LZFeq_2021_ANOVA_PredictedVals.csv'), row.names = F)
+write.csv(LZFeq.aov.predse, file.path(rootdir, 'LZFeq_2021_ANOVA_PredictedVals_StdErr.csv'), row.names = F)
+
+``` 
+## Post-hoc ANOVAs by LZFeq Frequency
+
+The below plots illustrate the current difference in spectral LZFeq from pre-treatment, after three years of use. The plots are generated from the output of the statistical models, holding pavement temperature constant at 90 degrees and speed constant at 50 mph. The change in LZFeq is calculated as the difference between the predicted sound levels at 90 degrees and 50 mph for a particular treatment, compared to the baseline pavement conditions in 2016 in the same conditions. The error bars are the standard errors for predicted LZFeq values. The predicted values at these conditions are saved as `LZFeq_2019_ANOVA_PredictedVals.csv` and `LZFeq_2019_ANOVA_PredictedVals_StdErr.csv`
+
+After three years, the 3/8" chip seal pavement attenuates more high frequency content but less mid frequency content than the pre-treatment, older 3/8" chip seal pavement. Similar to the results after one year, the type III microsurfacing still attenuates less low frequency content than the pre-treatment pavement after three years of use.
+
+```{r plotting_change_LZFeq 2021, fig.height = 20, fig.width = 15}
+
+y_range = c(-10, 10)
+
+## Use predvals. Subtract from baseline to show difference.
+predvals = LZFeq.aov.predvals
+predse = LZFeq.aov.predse
+
+predvals[,3:6] = predvals[,3:6] - predvals[,2]
+
+## Set colors for each point for 1/4 in chip seal
+CS_1.4_col = c()
+CS_1.4_col = ifelse(abs(predvals$X1.4in.Chip.Seal) > predse$X1.4in.Chip.Seal,
+       ifelse(predvals$X1.4in.Chip.Seal < 0, "blue", "red"),"gray")
+
+## Plot LZFeq 1/4in Chip Seal.
+## Since now we are including interaction between speed and treatment, also add the coefficient for the treatment at 50 mph
+LZFeq_Chip.Seal.1.4 = ggplot()+
+  geom_pointrange(data = predvals,
+                  aes(x = frequency,
+                      y = X1.4in.Chip.Seal,
+                      ymin = X1.4in.Chip.Seal - predse$X1.4in.Chip.Seal,
+                      ymax = X1.4in.Chip.Seal + predse$X1.4in.Chip.Seal),
+                  colour = CS_1.4_col,
+                  size =1) +
+  theme_bw(base_line_size = 1,
+           base_size = 20)+
+  scale_x_log10()+
+  labs(title = 'Three Years LZFeq ANOVA 1/4" Chip Seal Coefficients', 
+       x = "Frequency (Hz)", 
+       y = "LZFeq Difference \nfrom Pre-Treatment (dB)")  + 
+  geom_hline(yintercept = 0) +
+  ylim(y_range[1], y_range[2])
+
+## Set colors for each point in 3/8 in chip seal
+CS_3.8_col = c()
+CS_3.8_col = ifelse(abs(predvals$X3.8in.Chip.Seal) > predse$X3.8in.Chip.Seal,
+       ifelse(predvals$X3.8in.Chip.Seal < 0, "blue", "red"),"gray")
+
+## Plot LZFeq 3/8 in chip seal
+LZFeq_Chip.Seal.3.8 = ggplot()+
+  geom_pointrange(data = predvals, 
+                  aes(x = frequency,
+                      y = X3.8in.Chip.Seal,
+                      ymin = X3.8in.Chip.Seal - predse$X3.8in.Chip.Seal,
+                      ymax =X3.8in.Chip.Seal + predse$X3.8in.Chip.Seal),
+                  colour = CS_3.8_col,
+                  size = 1) +
+  theme_bw(base_line_size = 1,
+           base_size = 20)+
+  scale_x_log10()+
+  labs(title = 'Three Years LZFeq ANOVA 3/8" Chip Seal Coefficients', 
+       x = "Frequency (Hz)", 
+       y = "LZFeq Difference \nfrom Pre-Treatment (dB)")  + 
+  geom_hline(yintercept = 0)+
+  ylim(y_range[1], y_range[2])
+
+## Set colors for each point in type II microsurfacing
+TII_Micro_col = c()
+TII_Micro_col = ifelse(abs(predvals$Type.II.Microsurfacing)>predse$Type.II.Microsurfacing,
+       ifelse(predvals$Type.II.Microsurfacing<0, "blue", "red"),"gray")
+
+## Plot LZFeq type II microsurfacing
+LZFeq_Microsurfacing.II = ggplot()+
+  geom_pointrange(data = predvals,
+                  aes(x = frequency, 
+                  y = Type.II.Microsurfacing,
+                  ymin=Type.II.Microsurfacing - predse$Type.II.Microsurfacing,
+                  ymax=Type.II.Microsurfacing + predse$Type.II.Microsurfacing),
+                  colour = TII_Micro_col,
+                  size = 1) +
+  theme_bw(base_line_size = 1,
+           base_size = 20)+
+  scale_x_log10()+
+  labs(title = "Three Years LZFeq ANOVA Type II Microsurfacing Coefficients", 
+       x = "Frequency (Hz)", 
+       y = "LZFeq Difference \nfrom Pre-Treatment (dB)")  + 
+  geom_hline(yintercept = 0)+
+  ylim(y_range[1], y_range[2])
+
+## Set colors for each point in type III microsurfacing
+TIII_Micro_col = c()
+TIII_Micro_col = ifelse(abs(predvals$Type.III.Microsurfacing)>predse$Type.III.Microsurfacing,
+       ifelse(predvals$Type.III.Microsurfacing<0, "blue", "red"),"gray")
+
+## Plot LZFeq Type III microsurfacing
+LZFeq_Microsurfacing.III = ggplot()+
+  geom_pointrange(data = predvals,
+                  aes(x = frequency, 
+                  y = Type.III.Microsurfacing,
+                  ymin=Type.III.Microsurfacing - predse$Type.III.Microsurfacing,
+                  ymax=Type.III.Microsurfacing + predse$Type.III.Microsurfacing),
+                  colour = TIII_Micro_col,
+                  size = 1) +
+  theme_bw(base_line_size = 1,
+           base_size = 20)+
+  scale_x_log10()+
+  labs(title = "Three Years LZFeq ANOVA Type III Microsurfacing Coefficients", 
+       x = "Frequency (Hz)", 
+       y = "LZFeq Difference \nfrom Pre-Treatment (dB)")  + 
+  geom_hline(yintercept = 0)+
+  ylim(y_range[1], y_range[2])
+
+## Arrange plots in grid
+grid.arrange(LZFeq_Chip.Seal.1.4,LZFeq_Chip.Seal.3.8,LZFeq_Microsurfacing.II, LZFeq_Microsurfacing.III, nrow = 4)
+
+```
+
+## Plotting standardized curves
+
+The following shows the predicted LZFeq values at standardized pavement temperature (90 degrees) and vehicle speed (50 mph). Two versions are shown, a point plot and a 'ribbon plot'. Both show the predicted values, +/- 1 standard error. 
+
+The second plot is interactive; clicking on the legend will show or hide a specific treatment.
+
+```{r plotting_curves_LZFeq 2021, fig.height = 8, fig.width = 10}
+
+## Use predvals
+predvals = LZFeq.aov.predvals
+predse = LZFeq.aov.predse
+
+predvals = gather(predvals, key = 'treatment', value = 'LZFeq',
+                  baseline_chipseal, X3.8in.Chip.Seal, X1.4in.Chip.Seal, Type.II.Microsurfacing, Type.III.Microsurfacing)
+
+predse = gather(predse, key = 'treatment', value = 'SE',
+                  baseline_chipseal, X3.8in.Chip.Seal, X1.4in.Chip.Seal, Type.II.Microsurfacing, Type.III.Microsurfacing)
+
+predvals = left_join(predvals, predse)
+
+## Plot 
+
+point_plot <- ggplot(predvals, aes(x = frequency,
+                     y = LZFeq,
+                     color = treatment)) +
+  geom_pointrange(aes(ymin = LZFeq - SE,
+                      ymax = LZFeq + SE), 
+                      size = 1) +
+  geom_line() + 
+  theme_bw(base_line_size = 1,
+           base_size = 15) +
+  scale_x_log10() +
+  labs(title = "Three Years LZFeq by Surface Treatment \nat 90 deg F pavement temperature and 50 mph speed", 
+       x = "Frequency (Hz)", 
+       y = "LZFeq (dB)")
+
+point_plot
+
+## Ribbons
+ribbon_plot <- ggplot(predvals, aes(x = frequency,
+                     y = LZFeq,
+                     color = treatment)) +
+  geom_ribbon(aes(ymin = LZFeq - SE,
+              ymax = LZFeq + SE, 
+              fill = treatment,
+              color = NULL),
+              alpha = 0.3) +
+    geom_line() + 
+
+  theme_bw(base_line_size = 1,
+           base_size = 15) +
+  scale_x_log10() +
+  labs(title = "Three Years LZFeq by Surface Treatment \nat 90 deg F pavement temperature and 50 mph speed", 
+       x = "Frequency (Hz)", 
+       y = "LZFeq (dB)")
+
+ggplotly(ribbon_plot)
+
+  
+```
