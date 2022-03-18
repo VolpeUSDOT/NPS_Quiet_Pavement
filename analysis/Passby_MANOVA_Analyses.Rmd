@@ -815,7 +815,7 @@ write.csv(LZFeq.aov.predse, file.path(rootdir, 'LZFeq_2021_ANOVA_PredictedVals_S
 
 Once the statistical significance of the MANOVA was established, it was appropriate to conduct single Analyses of Variance (ANOVAs) for each one-third octave band frequency using this model to determine the effects of each parameter on sound level. 
 
-The below plots (figures 31-24 in the three-year report) illustrate the current difference in spectral LZFeq from pre-treatment, after three years of use. The plots are generated from the output of the ANOVA models based on 2021 measured data, holding vehicle speed constant at 50 mph and pavement temperature constant at 90 degrees Fahrenheit to normalize the measured data for facilitation of direct comparison of surface treatments. The change in LZFeq after three years is calculated as the difference between the predicted sound levels at 50 mph and 90 deg F for a particular treatment in 2021, compared to the baseline pavement conditions in 2016 under the same vehicle speed and pavement temperature conditions. The predicted values and standard errors at these conditions are saved as `LZFeq_2021_ANOVA_PredictedVals.csv` and `LZFeq_2021_ANOVA_PredictedVals_StdErr.csv`
+The below plots (figures 38-41 in the 3-year report) illustrate the current difference in spectral LZFeq from pre-treatment, after three years of use. The plots are generated from the output of the ANOVA models based on 2021 measured data, holding vehicle speed constant at 50 mph and pavement temperature constant at 90 degrees Fahrenheit to isolate the effect of the surface treatments. The change in LZFeq after three years is calculated as the difference between the predicted sound levels at 50 mph and $90^{\circ}F$ for a particular treatment in 2021, compared to the baseline pavement conditions in 2016 under the same vehicle speed and pavement temperature conditions. The predicted values and standard errors at these conditions are saved as `LZFeq_2021_ANOVA_PredictedVals.csv` and `LZFeq_2021_ANOVA_PredictedVals_StdErr.csv`
 
 Note that in these figures the error bars are based on ± 1 standard error, which provides a confidence interval of 68.3%, rather than the typical ± 1.96 standard errors, which provides a 95% confidence interval. This was done to help highlight potential differences. Because this interval is less conservative, as new data are added, some trends may change. From these figures, the following conclusions can be drawn:
 
@@ -850,7 +850,7 @@ LZFeq_Chip.Seal.1.4 = ggplot()+
   theme_bw(base_line_size = 1,
            base_size = 20)+
   scale_x_log10()+
-  labs(title = 'Three-Year LZFeq ANOVA 1/4" Chip Seal Difference from Pre-treatment', 
+  labs(title = '3-Year LZFeq ANOVA 1/4" Chip Seal Difference from Pre-treatment', 
        x = "Frequency (Hz)", 
        y = "LZFeq Difference \nfrom Pre-Treatment (dB)")  + 
   geom_hline(yintercept = 0) +
@@ -873,7 +873,7 @@ LZFeq_Chip.Seal.3.8 = ggplot()+
   theme_bw(base_line_size = 1,
            base_size = 20)+
   scale_x_log10()+
-  labs(title = 'Three-Year LZFeq ANOVA 3/8" Chip Seal Difference from Pre-treatment', 
+  labs(title = '3-Year LZFeq ANOVA 3/8" Chip Seal Difference from Pre-treatment', 
        x = "Frequency (Hz)", 
        y = "LZFeq Difference \nfrom Pre-Treatment (dB)")  + 
   geom_hline(yintercept = 0)+
@@ -896,7 +896,7 @@ LZFeq_Microsurfacing.II = ggplot()+
   theme_bw(base_line_size = 1,
            base_size = 20)+
   scale_x_log10()+
-  labs(title = "Three-Year LZFeq ANOVA Type II Microsurfacing Difference from Pre-treatment", 
+  labs(title = "3-Year LZFeq ANOVA Type II Microsurfacing Difference from Pre-treatment", 
        x = "Frequency (Hz)", 
        y = "LZFeq Difference \nfrom Pre-Treatment (dB)")  + 
   geom_hline(yintercept = 0)+
@@ -919,7 +919,7 @@ LZFeq_Microsurfacing.III = ggplot()+
   theme_bw(base_line_size = 1,
            base_size = 20)+
   scale_x_log10()+
-  labs(title = "Three-Year LZFeq ANOVA Type III Microsurfacing Difference from Pre-treatment", 
+  labs(title = "3-Year LZFeq ANOVA Type III Microsurfacing Difference from Pre-treatment", 
        x = "Frequency (Hz)", 
        y = "LZFeq Difference \nfrom Pre-Treatment (dB)")  + 
   geom_hline(yintercept = 0)+
@@ -932,7 +932,7 @@ grid.arrange(LZFeq_Chip.Seal.1.4,LZFeq_Chip.Seal.3.8,LZFeq_Microsurfacing.II, LZ
 
 ## Plotting standardized curves
 
-The following shows the predicted LZFeq values at standardized vehicle speed (50 mph) and pavement temperature (90 deg F). Two versions are shown, a point plot and a 'ribbon plot'. Both show the predicted values, +/- 1 standard error. 
+The following shows the predicted LZFeq values at standardized vehicle speed (50 mph) and pavement temperature ( $90^{\circ}F$). Two versions are shown, a point plot and a 'ribbon plot'. Both show the predicted values, +/- 1 standard error. 
 
 The second plot is interactive; clicking on the legend will show or hide a specific treatment.
 
@@ -962,7 +962,7 @@ point_plot <- ggplot(predvals, aes(x = frequency,
   theme_bw(base_line_size = 1,
            base_size = 15) +
   scale_x_log10() +
-  labs(title = "Three-Year LZFeq by Surface Treatment \nat 50mph vehicle speed & 90degF pavement temp", 
+  labs(title = "3-Year LZFeq by Surface Treatment \nat 50mph vehicle speed & 90°F pavement temp", 
        x = "Frequency (Hz)", 
        y = "LZFeq (dB)")
 
@@ -982,7 +982,7 @@ ribbon_plot <- ggplot(predvals, aes(x = frequency,
   theme_bw(base_line_size = 1,
            base_size = 15) +
   scale_x_log10() +
-  labs(title = "Three-Year LZFeq by Surface Treatment \nat 50mph vehicle speed & 90degF pavement temp", 
+  labs(title = "3-Year LZFeq by Surface Treatment \nat 50mph vehicle speed & 90°F pavement temp", 
        x = "Frequency (Hz)", 
        y = "LZFeq (dB)")
 
