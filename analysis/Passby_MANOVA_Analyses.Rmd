@@ -1,5 +1,5 @@
 ---
-title: "Death Valley Wayside Single Passby Analysis of Variance across Time, Frequency, and Pavement Conditions"
+title: "Death Valley Wayside Single Pass-By Analysis of Variance across Time, Frequency, and Pavement Conditions"
 output: 
   html_document:
     self_contained: true
@@ -89,13 +89,13 @@ LZFeq_l <- LZFeq_l %>%
 
 # Overview
 
-Goal is to assess the noise measurements from wayside single passby measurements in 2016-2021. In 2018, four pavement surface treatments were applied to test areas: 1/4" chip seal, 3/8" chip seal, Type II microsurfacing, and Type III microsurfacing. 
+Goal is to assess the noise measurements from wayside single pass-by measurements in 2016-2021. In 2018, four pavement surface treatments were applied to test areas: 1/4" chip seal, 3/8" chip seal, Type II microsurfacing, and Type III microsurfacing. 
 
 There are eight sites, and four surface treatments; each surface treatment is replicated at two sites. Sound pressure levels were measured pre-treatment and post-treatment.
 
 In the original assessment, the Type II microsurfacing was found to reduce overall sound intensity sound from OBSI measurements on average, from 99.2 to 97.6 dB. Other treatments did not reduce sound intensity levels, on average.
 
-This analysis focuses on the wayside single passby data and assesses the effects of speed and pavement temperature in addition to surface treatments.
+This analysis focuses on the wayside single pass-by data and assesses the effects of speed and pavement temperature in addition to surface treatments.
 
 In the table below, SD_pavetemp is not applicable when the value is zero because the same pavement temperature was measured throughout the trial. These analyses exclude non-passenger car vehicle types (i.e., bus or motorcycle measurements), because they occurred infrequently and therefore vehicle type could not be used as a covariate in the analyses.
 
@@ -119,7 +119,7 @@ LZFeq_summary$Treatment <- sub("\\.", " ", LZFeq_summary$Treatment)
 
 
 kable(LZFeq_summary,
-      caption = "Summary of passby data collected by year and surface treatment",
+      caption = "Summary of pass-by data collected by year and surface treatment",
       digits = 2) %>% 
   kable_styling(bootstrap_options = c("striped", "hover")) 
 
@@ -735,13 +735,13 @@ final.model = full.model # all concise models had significant partial F-statisti
 finalmodel.coeff = coefficients(final.model)
 ```
 
-Measured data can be affected by vehicle speed, pavement type, pavement temperature, and the interactions between these main effects. In order to further isolate the effect of pavement type, a Multiple Analysis of Variance (MANOVA) was conducted using measurements from the pre-treatment and post-treatment conditions. The predictors in the MANOVA include the surface treatment, vehicle speed, and pavement temperature. The response variables are the one-third octave band levels associated with the pass-by for each event. In contrast to an ANOVA model, the response in the statistical model is a matrix (number of observations × number of one-third octave bands as response variables) rather than a single vector (number of observations × 1 response variable). This analysis allows the greatest amount of data to be utilized in order to isolate the contribution of pavement type on the difference in measured levels.
+Measured data can be affected by vehicle speed, pavement type, pavement temperature, and the interactions between these main effects. In order to further isolate the effect of pavement type, a Multiple Analysis of Variance (MANOVA) was conducted using measurements from the pre-treatment and post-treatment conditions. The predictors in the MANOVA include the surface treatment, vehicle speed, and pavement temperature. The response variables are the one-third octave band levels associated with the pass-by for each event. In contrast to an ANOVA model, the response in the statistical model is a matrix (number of observations × number of one-third octave bands as response variables) rather than a single vector (number of observations × one response variable). This analysis allows the greatest amount of data to be utilized in order to isolate the contribution of pavement type on the difference in measured levels.
 
-Model selection was conducted to determine the most parsimonious MANOVA model with the fewest predictive parameters that would explain the most change in the response variable matrix. An array of concise models containing a unique subset of the predictor variables was evaluated against a model containing all predictors. The full list of predictors includes the main effects (i.e., surface treatment, vehicle speed, and pavement temperature) and interaction effects (i.e., statistical interaction between vehicle speed and pavement temperature, as well as the interaction between surface treatment and vehicle speed).  Partial F-statistics were computed to compare each concise model against the full model, in which a large and significant F-statistic indicates that the concise model fails to capture a significant amount of variance in the response data due to the deleted predictive parameters. The statistical significance of the partial F-statistic is determined based on the p-value. For this analysis, a p-value less than 0.05 is considered statistically significant. This threshold corresponds to a 95% likelihood that the measured differences in LZFeq data for each passby are attributable to the predictor variables in the full model, and did not occur simply by chance. As shown in (Table 5 in the 3-year measurement report), all concise models containing a subset of the predictors produced significant partial F-statistics with p-values below 0.05, meaning the full model containing all predictor variables is the best model to use for the statistical analysis. 
+Model selection was conducted to determine the most parsimonious MANOVA model with the fewest predictive parameters that would explain the most change in the response variable matrix. An array of concise models containing a unique subset of the predictor variables was evaluated against a model containing all predictors. The full list of predictors includes the main effects (i.e., surface treatment, vehicle speed, and pavement temperature) and interaction effects (i.e., statistical interaction between vehicle speed and pavement temperature, as well as the interaction between surface treatment and vehicle speed).  Partial F-statistics were computed to compare each concise model against the full model, in which a large and significant F-statistic indicates that the concise model fails to capture a significant amount of variance in the response data due to the deleted predictive parameters. The statistical significance of the partial F-statistic is determined based on the p-value. For this analysis, a p-value less than 0.05 is considered statistically significant. This threshold corresponds to a 95% likelihood that the measured differences in LZFeq data for each pass-by are attributable to the predictor variables in the full model, and did not occur simply by chance. As shown in (Table 5 in the 3.5-year measurement report), all concise models containing a subset of the predictors produced significant partial F-statistics with p-values below 0.05, meaning the full model containing all predictor variables is the best model to use for the statistical analysis. 
 
-The table (Table 6 in the 3-year measurement report) shows the summary of the MANOVA statistical test for the difference in sound pressure level (LZFeq) across all 1/3 octave bands attributable to each of the predictors. Note that only 1/3 octave bands from 50 Hz to 4 kHz were included in this analysis. The high frequency analysis limit is due to the internal noise floor of the measurement equipment, which results in poor signal to noise ratio at high frequencies in areas with low ambient noise, such as Death Valley. The first column in the table displays the parameters being evaluated for their impact on the matrix of LZFeq 1/3 octave band data measured for each passby. The parameters being evaluated in this data set include either a main effect (surface treatment, vehicle speed, and pavement temperature) or an interaction effect (statistical interaction between vehicle speed and pavement temperature, as well as the interaction between surface treatment and vehicle speed). The second column shows the number of degrees of freedom associated with each parameter, which indicates the number of unique options that can vary. The third column is an estimate of Pillai’s trace, which is a test statistic used in multivariate analyses to evaluate the predictive power of each parameter. A larger Pillai’s value indicates that the parameter is responsible for a greater portion of the difference in spectral LZFeq observed between each passby. In order to interpret the statistical significance of this test statistic, we examine the p-value, which is shown in the final column of the table. For this analysis, a p-value less than 0.05 is considered statistically significant. This threshold corresponds to a 95% likelihood that the measured differences in LZFeq data for each passby are attributable to the predictor variable, and did not occur simply by chance. The other columns in the table display the approximate F-statistic, (another means of evaluating the statistical significance of predictor variables in which a higher value indicates a greater impact on the response data), and the degrees of freedom for the numerator and denominator in the F-statistics.
+The table (Table 6 in the 3.5-year measurement report) shows the summary of the MANOVA statistical test for the difference in sound pressure level (LZFeq) across all 1/3 octave bands attributable to each of the predictors. Note that only 1/3 octave bands from 50 Hz to 4 kHz were included in this analysis. The high frequency analysis limit is due to the internal noise floor of the measurement equipment, which results in poor signal to noise ratio at high frequencies in areas with low ambient noise, such as Death Valley. The first column in the table displays the parameters being evaluated for their impact on the matrix of LZFeq 1/3 octave band data measured for each pass-by. The parameters being evaluated in this data set include either a main effect (surface treatment, vehicle speed, and pavement temperature) or an interaction effect (statistical interaction between vehicle speed and pavement temperature, as well as the interaction between surface treatment and vehicle speed). The second column shows the number of degrees of freedom associated with each parameter, which indicates the number of unique options that can vary. The third column is an estimate of Pillai’s trace, which is a test statistic used in multivariate analyses to evaluate the predictive power of each parameter. A larger Pillai’s value indicates that the parameter is responsible for a greater portion of the difference in spectral LZFeq observed between each pass-by. In order to interpret the statistical significance of this test statistic, we examine the p-value, which is shown in the final column of the table. For this analysis, a p-value less than 0.05 is considered statistically significant. This threshold corresponds to a 95% likelihood that the measured differences in LZFeq data for each pass-by are attributable to the predictor variable, and did not occur simply by chance. The other columns in the table display the approximate F-statistic, (another means of evaluating the statistical significance of predictor variables in which a higher value indicates a greater impact on the response data), and the degrees of freedom for the numerator and denominator in the F-statistics.
 
-The MANOVA indicates that there are strong, statistically significant effects on the noise levels across the frequency spectra for most predictors included in the analysis. All predictors are statistically significant at a level of $\alpha$=0.05 except for the interactive effect of vehicle speed and pavement temperature, as the p-value of Pillai’s test statistic is greater than 0.05. Surface treatment and vehicle speed are the strongest independent predictors of noise, as they both have large Pillai values with corresponding p-values less than 0.001. The latter can be interpreted as a greater than 99% chance that the LZFeq difference measured between passbys can be confidently attributed to surface treatment and vehicle speed.
+The MANOVA indicates that there are strong, statistically significant effects on the noise levels across the frequency spectra for most predictors included in the analysis. All predictors are statistically significant at a level of $\alpha$=0.05 except for the interactive effect of vehicle speed and pavement temperature, as the p-value of Pillai’s test statistic is greater than 0.05. Surface treatment and vehicle speed are the strongest independent predictors of noise, as they both have large Pillai values with corresponding p-values less than 0.001. The latter can be interpreted as a greater than 99% chance that the LZFeq difference measured between pass-bys can be confidently attributed to surface treatment and vehicle speed.
  
 ```{r overall summary 2021}
 sum_2021 <- summary(final.model)
@@ -754,7 +754,7 @@ sum_2021$stats[is.na(sum_2021$stats)] = ""
 
 kable(sum_2021$stats,
       align = 'r',
-      caption = "Summary of MANOVA analysis for 3-years post-treatment (2021) compared to pre-treatment (2016)",
+      caption = "Summary of MANOVA analysis for 3.5-years post-treatment (2021) compared to pre-treatment (2016)",
       digits = 3) %>%
   kable_styling(bootstrap_options = c("striped", "hover"))
 
@@ -822,12 +822,12 @@ write.csv(LZFeq.aov.predse, file.path(rootdir, 'LZFeq_2021_ANOVA_PredictedVals_S
 
 Once the statistical significance of the MANOVA was established, it was appropriate to conduct single Analyses of Variance (ANOVAs) for each one-third octave band frequency using this model to determine the effects of each parameter on sound level. 
 
-The below plots (figures 42-45 in the 3-year report) illustrate the current difference in spectral LZFeq from pre-treatment, after three years of use. The plots are generated from the output of the ANOVA models based on 2021 measured data, holding vehicle speed constant at 50 mph and pavement temperature constant at 90 degrees Fahrenheit to isolate the effect of the surface treatments. The change in LZFeq after three years is calculated as the difference between the predicted sound levels at 50 mph and $90^{\circ}F$ for a particular treatment in 2021, compared to the baseline pavement conditions in 2016 under the same vehicle speed and pavement temperature conditions. The predicted values and standard errors at these conditions are saved as `LZFeq_2021_ANOVA_PredictedVals.csv` and `LZFeq_2021_ANOVA_PredictedVals_StdErr.csv`
+The below plots (figures 42-45 in the 3.5-year report) illustrate the current difference in spectral LZFeq from pre-treatment, after three and a half years of use. The plots are generated from the output of the ANOVA models based on 2021 measured data, holding vehicle speed constant at 50 mph and pavement temperature constant at 90 degrees Fahrenheit to isolate the effect of the surface treatments. The change in LZFeq after three and a half years is calculated as the difference between the predicted sound levels at 50 mph and $90^{\circ}F$ for a particular treatment in 2021, compared to the baseline pavement conditions in 2016 under the same vehicle speed and pavement temperature conditions. The predicted values and standard errors at these conditions are saved as `LZFeq_2021_ANOVA_PredictedVals.csv` and `LZFeq_2021_ANOVA_PredictedVals_StdErr.csv`
 
 Note that in these figures the error bars are based on ± 1 standard error, which provides a confidence interval of 68.3%, rather than the typical ± 1.96 standard errors, which provides a 95% confidence interval. This was done to help highlight potential differences. Because this interval is less conservative, as new data are added, some trends may change. From these figures, the following conclusions can be drawn:
 
 - The 3/8" chip seal pavement attenuates more high frequency content but less mid frequency content than the pre-treatment, older 3/8" chip seal pavement.
-- Similar to the results after one year, the type III microsurfacing after three years of use still attenuates less low frequency content than the pre-treatment pavement baseline.
+- Similar to the results after one year, the type III microsurfacing after three and a half years of use still attenuates less low frequency content than the pre-treatment pavement baseline.
 
 ```{r plotting_change_LZFeq 2021, fig.height = 20, fig.width = 15}
 
@@ -838,6 +838,7 @@ predvals = LZFeq.aov.predvals
 predse = LZFeq.aov.predse
 
 predvals[,3:6] = predvals[,3:6] - predvals[,2]
+
 
 ## Set colors for each point for 1/4 in chip seal
 CS_1.4_col = c()
@@ -857,7 +858,7 @@ LZFeq_Chip.Seal.1.4 = ggplot()+
   theme_bw(base_line_size = 1,
            base_size = 20)+
   scale_x_log10()+
-  labs(title = '3-Year LZFeq ANOVA 1/4" Chip Seal Difference from Pre-treatment', 
+  labs(title = '1/4" Chip Seal', 
        x = "Frequency (Hz)", 
        y = "LZFeq Difference \nfrom Pre-Treatment (dB)")  + 
   geom_hline(yintercept = 0) +
@@ -880,7 +881,7 @@ LZFeq_Chip.Seal.3.8 = ggplot()+
   theme_bw(base_line_size = 1,
            base_size = 20)+
   scale_x_log10()+
-  labs(title = '3-Year LZFeq ANOVA 3/8" Chip Seal Difference from Pre-treatment', 
+  labs(title = '3/8" Chip Seal', 
        x = "Frequency (Hz)", 
        y = "LZFeq Difference \nfrom Pre-Treatment (dB)")  + 
   geom_hline(yintercept = 0)+
@@ -903,7 +904,7 @@ LZFeq_Microsurfacing.II = ggplot()+
   theme_bw(base_line_size = 1,
            base_size = 20)+
   scale_x_log10()+
-  labs(title = "3-Year LZFeq ANOVA Type II Microsurfacing Difference from Pre-treatment", 
+  labs(title = "Type II Microsurfacing", 
        x = "Frequency (Hz)", 
        y = "LZFeq Difference \nfrom Pre-Treatment (dB)")  + 
   geom_hline(yintercept = 0)+
@@ -926,14 +927,14 @@ LZFeq_Microsurfacing.III = ggplot()+
   theme_bw(base_line_size = 1,
            base_size = 20)+
   scale_x_log10()+
-  labs(title = "3-Year LZFeq ANOVA Type III Microsurfacing Difference from Pre-treatment", 
+  labs(title = " Type III Microsurfacing", 
        x = "Frequency (Hz)", 
        y = "LZFeq Difference \nfrom Pre-Treatment (dB)")  + 
   geom_hline(yintercept = 0)+
   ylim(y_range[1], y_range[2])
 
 ## Arrange plots in grid
-grid.arrange(LZFeq_Chip.Seal.1.4,LZFeq_Chip.Seal.3.8,LZFeq_Microsurfacing.II, LZFeq_Microsurfacing.III, nrow = 4)
+grid.arrange(LZFeq_Chip.Seal.1.4,LZFeq_Chip.Seal.3.8,LZFeq_Microsurfacing.II, LZFeq_Microsurfacing.III, nrow = 2,  top = textGrob("3.5-Year LZFeq ANOVA Difference from Pre-treatment", gp=gpar(fontsize=35)))
 
 ```
 
@@ -969,7 +970,7 @@ point_plot <- ggplot(predvals, aes(x = frequency,
   theme_bw(base_line_size = 1,
            base_size = 15) +
   scale_x_log10() +
-  labs(title = "3-Year LZFeq by Surface Treatment \nat 50mph vehicle speed & 90°F pavement temp", 
+  labs(title = "3.5-Year LZFeq by Surface Treatment \nat 50mph vehicle speed & 90°F pavement temp", 
        x = "Frequency (Hz)", 
        y = "LZFeq (dB)")
 
@@ -989,7 +990,7 @@ ribbon_plot <- ggplot(predvals, aes(x = frequency,
   theme_bw(base_line_size = 1,
            base_size = 15) +
   scale_x_log10() +
-  labs(title = "3-Year LZFeq by Surface Treatment \nat 50mph vehicle speed & 90°F pavement temp", 
+  labs(title = "3.5-Year LZFeq by Surface Treatment \nat 50mph vehicle speed & 90°F pavement temp", 
        x = "Frequency (Hz)", 
        y = "LZFeq (dB)")
 
