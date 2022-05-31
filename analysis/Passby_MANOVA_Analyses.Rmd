@@ -127,9 +127,38 @@ kable(LZFeq_summary,
 
 # 2018 MANOVA Analysis with LZFeq
 
-```{r manova_1 with LZFeq}
+```{r manova_1 with LZFeq model selection}
 
 LZFeq_l_18 = filter(LZFeq_l, Year %in% c("2016", "2018")) # working dataset for current analysis is 2016 to 2018 comparison dataset
+
+## conduct partial F test of full model with all predictors against concise models with fewer predictors
+## (pavetemp:treatment interaction not possible because one site had constant pavetemp)
+full.model = manova(cbind(X50, X63, X80,X100,X125,X160,X200,X250,X315,X400,X500,
+                     X630,X800,X1000,X1250,X1600,X2000,X2500,X3150,X4000) ~ treatment + speed +  pavetemp + pavetemp:speed + treatment:speed, data = LZFeq_l_18)
+
+no.pavetemp = manova(cbind(X50, X63, X80,X100,X125,X160,X200,X250,X315,X400,X500,
+                      X630,X800,X1000,X1250,X1600,X2000,X2500,X3150,X4000) ~ treatment + speed, data = LZFeq_l_18)
+
+#anova(full.model,no.pavetemp) # partial F-stat is significant, thus the no.interactions model leaves variance unexplained
+
+no.interactions = manova(cbind(X50, X63, X80,X100,X125,X160,X200,X250,X315,X400,X500,
+                      X630,X800,X1000,X1250,X1600,X2000,X2500,X3150,X4000) ~ treatment + speed + pavetemp, data = LZFeq_l_18)
+
+#anova(full.model,no.interactions) # partial F-stat is significant, thus the no.interactions model leaves variance unexplained
+
+treatment.speed = manova(cbind(X50, X63, X80,X100,X125,X160,X200,X250,X315,X400,X500,
+                     X630,X800,X1000,X1250,X1600,X2000,X2500,X3150,X4000) ~ treatment + speed + pavetemp + treatment:speed, data = LZFeq_l_18)
+
+#anova(full.model,treatment.speed) # partial F-stat is significant, thus the treatment.speed model leaves variance unexplained
+
+speed.pavetemp = manova(cbind(X50, X63, X80,X100,X125,X160,X200,X250,X315,X400,X500,
+                    X630,X800,X1000,X1250,X1600,X2000,X2500,X3150,X4000) ~ treatment + speed + pavetemp+ pavetemp:speed, data = LZFeq_l_18)
+
+#anova(full.model,speed.pavetemp) # partial F-stat is significant, thus the speed.pavetemp model leaves variance unexplained
+
+final.model = full.model # all concise models had significant partial F-statistics, therefore the full model is the best model
+
+finalmodel.coeff = coefficients(final.model)
 
 LZFeq.man.macrotreatment <- manova(cbind(X50, X63, X80,X100,X125,X160,X200,X250,X315,X400,X500,
                         X630,X800,X1000,X1250,X1600,X2000,X2500,X3150,X4000,
@@ -424,9 +453,38 @@ ggplotly(ribbon_plot)
 
 # 2019 MANOVA Analysis with LZFeq
 
-```{r manova_2019 with LZFeq}
+```{r manova_2019 with LZFeq model selection}
 
 LZFeq_l_19 = filter(LZFeq_l, Year %in% c("2016", "2019")) # save a 2016 to 2019 comparison dataset
+
+## conduct partial F test of full model with all predictors against concise models with fewer predictors
+## (pavetemp:treatment interaction not possible because one site had constant pavetemp)
+full.model = manova(cbind(X50, X63, X80,X100,X125,X160,X200,X250,X315,X400,X500,
+                     X630,X800,X1000,X1250,X1600,X2000,X2500,X3150,X4000) ~ treatment + speed +  pavetemp + pavetemp:speed + treatment:speed, data = LZFeq_l_19)
+
+no.pavetemp = manova(cbind(X50, X63, X80,X100,X125,X160,X200,X250,X315,X400,X500,
+                      X630,X800,X1000,X1250,X1600,X2000,X2500,X3150,X4000) ~ treatment + speed, data = LZFeq_l_19)
+
+#anova(full.model,no.pavetemp) # partial F-stat is significant, thus the no.interactions model leaves variance unexplained
+
+no.interactions = manova(cbind(X50, X63, X80,X100,X125,X160,X200,X250,X315,X400,X500,
+                      X630,X800,X1000,X1250,X1600,X2000,X2500,X3150,X4000) ~ treatment + speed + pavetemp, data = LZFeq_l_19)
+
+#anova(full.model,no.interactions) # partial F-stat is significant, thus the no.interactions model leaves variance unexplained
+
+treatment.speed = manova(cbind(X50, X63, X80,X100,X125,X160,X200,X250,X315,X400,X500,
+                     X630,X800,X1000,X1250,X1600,X2000,X2500,X3150,X4000) ~ treatment + speed + pavetemp + treatment:speed, data = LZFeq_l_19)
+
+#anova(full.model,treatment.speed) # partial F-stat is significant, thus the treatment.speed model leaves variance unexplained
+
+speed.pavetemp = manova(cbind(X50, X63, X80,X100,X125,X160,X200,X250,X315,X400,X500,
+                    X630,X800,X1000,X1250,X1600,X2000,X2500,X3150,X4000) ~ treatment + speed + pavetemp+ pavetemp:speed, data = LZFeq_l_19)
+
+#anova(full.model,speed.pavetemp) # partial F-stat is significant, thus the speed.pavetemp model leaves variance unexplained
+
+final.model = full.model # all concise models had significant partial F-statistics, therefore the full model is the best model
+
+finalmodel.coeff = coefficients(final.model)
 
 LZFeq.man.microtreatment2 <- manova(cbind(X50, X63, X80,X100,X125,X160,X200,X250,X315,X400,X500,
                         X630,X800,X1000,X1250,X1600,X2000,X2500,X3150,X4000,
