@@ -898,6 +898,29 @@ predse = LZFeq.aov.predse
 predvals[,3:6] = predvals[,3:6] - predvals[,2]
 
 
+## Set colors for each point in 3/8 in chip seal
+CS_3.8_col = c()
+CS_3.8_col = ifelse(abs(predvals$X3.8in.Chip.Seal) > predse$X3.8in.Chip.Seal,
+       ifelse(predvals$X3.8in.Chip.Seal < 0, "blue", "red"),"gray")
+
+## Plot LZFeq 3/8 in chip seal
+LZFeq_Chip.Seal.3.8 = ggplot()+
+  geom_pointrange(data = predvals, 
+                  aes(x = frequency,
+                      y = X3.8in.Chip.Seal,
+                      ymin = X3.8in.Chip.Seal - predse$X3.8in.Chip.Seal,
+                      ymax =X3.8in.Chip.Seal + predse$X3.8in.Chip.Seal),
+                  colour = CS_3.8_col,
+                  size = 1) +
+  theme_bw(base_line_size = 1,
+           base_size = 20)+
+  scale_x_log10()+
+  labs(title = 'S01: 3/8" Chip Seal', 
+       x = "Frequency (Hz)", 
+       y = "LZFeq Difference \nfrom Pre-Treatment (dB)")  + 
+  geom_hline(yintercept = 0)+
+  ylim(y_range[1], y_range[2])
+
 ## Set colors for each point for 1/4 in chip seal
 CS_1.4_col = c()
 CS_1.4_col = ifelse(abs(predvals$X1.4in.Chip.Seal) > predse$X1.4in.Chip.Seal,
@@ -916,33 +939,10 @@ LZFeq_Chip.Seal.1.4 = ggplot()+
   theme_bw(base_line_size = 1,
            base_size = 20)+
   scale_x_log10()+
-  labs(title = '1/4" Chip Seal', 
+  labs(title = 'S02: 1/4" Chip Seal', 
        x = "Frequency (Hz)", 
        y = "LZFeq Difference \nfrom Pre-Treatment (dB)")  + 
   geom_hline(yintercept = 0) +
-  ylim(y_range[1], y_range[2])
-
-## Set colors for each point in 3/8 in chip seal
-CS_3.8_col = c()
-CS_3.8_col = ifelse(abs(predvals$X3.8in.Chip.Seal) > predse$X3.8in.Chip.Seal,
-       ifelse(predvals$X3.8in.Chip.Seal < 0, "blue", "red"),"gray")
-
-## Plot LZFeq 3/8 in chip seal
-LZFeq_Chip.Seal.3.8 = ggplot()+
-  geom_pointrange(data = predvals, 
-                  aes(x = frequency,
-                      y = X3.8in.Chip.Seal,
-                      ymin = X3.8in.Chip.Seal - predse$X3.8in.Chip.Seal,
-                      ymax =X3.8in.Chip.Seal + predse$X3.8in.Chip.Seal),
-                  colour = CS_3.8_col,
-                  size = 1) +
-  theme_bw(base_line_size = 1,
-           base_size = 20)+
-  scale_x_log10()+
-  labs(title = '3/8" Chip Seal', 
-       x = "Frequency (Hz)", 
-       y = "LZFeq Difference \nfrom Pre-Treatment (dB)")  + 
-  geom_hline(yintercept = 0)+
   ylim(y_range[1], y_range[2])
 
 ## Set colors for each point in type II microsurfacing
@@ -962,7 +962,7 @@ LZFeq_Microsurfacing.II = ggplot()+
   theme_bw(base_line_size = 1,
            base_size = 20)+
   scale_x_log10()+
-  labs(title = "Type II Microsurfacing", 
+  labs(title = "S03: Type II Microsurfacing", 
        x = "Frequency (Hz)", 
        y = "LZFeq Difference \nfrom Pre-Treatment (dB)")  + 
   geom_hline(yintercept = 0)+
@@ -985,14 +985,14 @@ LZFeq_Microsurfacing.III = ggplot()+
   theme_bw(base_line_size = 1,
            base_size = 20)+
   scale_x_log10()+
-  labs(title = " Type III Microsurfacing", 
+  labs(title = "S04: Type III Microsurfacing", 
        x = "Frequency (Hz)", 
        y = "LZFeq Difference \nfrom Pre-Treatment (dB)")  + 
   geom_hline(yintercept = 0)+
   ylim(y_range[1], y_range[2])
 
 ## Arrange plots in grid
-grid.arrange(LZFeq_Chip.Seal.1.4,LZFeq_Chip.Seal.3.8,LZFeq_Microsurfacing.II, LZFeq_Microsurfacing.III, nrow = 2,  top = textGrob("3.5-Year LZFeq ANOVA Difference from Pre-treatment", gp=gpar(fontsize=35)))
+grid.arrange(LZFeq_Chip.Seal.3.8,LZFeq_Chip.Seal.1.4,LZFeq_Microsurfacing.II, LZFeq_Microsurfacing.III, nrow = 2,  top = textGrob("3.5-Year LZFeq ANOVA Difference from Pre-treatment", gp=gpar(fontsize=35)))
 
 ```
 
